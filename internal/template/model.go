@@ -1,4 +1,4 @@
-package main
+package template
 
 import (
 	"fmt"
@@ -16,12 +16,12 @@ type SAMTemplate struct {
 
 func (t SAMTemplate) Functions() map[string]Function {
 	functions := make(map[string]Function)
-	globalEnvVars := t.Globals.Function.Environment.ParseMap()
+	globalEnvVars := parseVariables(t.Globals.Function.Environment.InnerVars)
 	for name, res := range t.Resources {
 		if res.Type == "AWS::Serverless::Function" {
-			res.Properties.Environment.Variables = res.Properties.Environment.ParseMap()
-			if res.Properties.CodeUri == "" {
-				res.Properties.CodeUri = t.Globals.Function.CodeUri
+			res.Properties.Environment.Variables = parseVariables(res.Properties.Environment.InnerVars)
+			if res.Properties.CodeURI == "" {
+				res.Properties.CodeURI = t.Globals.Function.CodeURI
 			}
 			if res.Properties.Runtime == "" {
 				res.Properties.Runtime = t.Globals.Function.Runtime
@@ -43,7 +43,6 @@ func (t SAMTemplate) Functions() map[string]Function {
 					res.Properties.Environment.Variables[k] = v
 				}
 			}
-			res.Properties.Environment.InnerVars = nil
 			functions[name] = res
 		}
 	}
@@ -51,7 +50,7 @@ func (t SAMTemplate) Functions() map[string]Function {
 }
 
 type FunctionSetting struct {
-	CodeUri     string `yaml:"CodeUri,omitempty"`
+	CodeURI     string `yaml:"CodeUri,omitempty"`
 	Runtime     string `yaml:"Runtime,omitempty"`
 	MemorySize  int    `yaml:"MemorySize,omitempty"`
 	Timeout     int    `yaml:"Timeout,omitempty"`
@@ -65,9 +64,9 @@ type Env struct {
 	Variables map[string]string
 }
 
-func (e Env) ParseMap() map[string]string {
+func parseVariables(vars yaml.MapSlice) map[string]string {
 	m := make(map[string]string)
-	for _, item := range e.InnerVars {
+	for _, item := range vars {
 		key := ""
 		switch v := item.Key.(type) {
 		case string:
