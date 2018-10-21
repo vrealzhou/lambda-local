@@ -10,6 +10,7 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/qiangxue/fasthttp-routing v0.0.0-20160225050629-6ccdc2a18d87 // indirect
+	github.com/satori/go.uuid v1.2.0
 	github.com/valyala/fasthttp v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20181017193950-04a2e542c03f
 	golang.org/x/sys v0.0.0-20181019160139-8e24a49d80f8 // indirect
