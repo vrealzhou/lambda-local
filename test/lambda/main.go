@@ -8,9 +8,9 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func handler(input json.RawMessage) ([]byte, error) {
-	fmt.Println("Hello")
-	return []byte("Hello"), nil
+func handler(input json.RawMessage) (json.RawMessage, error) {
+	fmt.Printf("Input: %s\n", string(input))
+	return []byte(`{"Result": "Hello"}`), nil
 }
 
 func main() {
