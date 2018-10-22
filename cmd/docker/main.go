@@ -25,7 +25,6 @@ var functions map[string]template.Function
 func main() {
 	args := parseArgs()
 	flag.Parse()
-	invoker.LambdaBinBase = "build/lambdas"
 	tmpl := parseTemplate(args.template)
 	functions = tmpl.Functions()
 	defer clearUp()

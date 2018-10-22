@@ -20,7 +20,7 @@ import (
 	"github.com/vrealzhou/lambda-local/internal/template"
 )
 
-var LambdaBinBase = "/lambdas"
+var LambdaBinBase = "/var/lambdas"
 var Functions = make(map[string]*FunctionMeta)
 var ConnError = errors.New("Conn Error")
 

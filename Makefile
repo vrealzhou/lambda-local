@@ -6,6 +6,12 @@ PROFILE=default
 
 build-lambda:
 	mkdir -p build/lambdas/Test
-	$(GO) build -ldflags '-s -w' -o build/lambdas/Test/main test/lambda/main.go
+	$(GOBUILD) -o build/lambdas/Test/main test/lambda/main.go
 	zip -j build/lambdas/Test.zip build/lambdas/Test/main
 	rm -rf build/lambdas/Test
+
+build-docker:
+	$(GOBUILD) -o build/docker/main cmd/docker/main.go
+	docker rmi lambda-local-go || exit 0
+	docker build -t lambda-local-go build/docker/
+	rm -rf build/docker/main
