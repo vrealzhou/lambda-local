@@ -165,7 +165,7 @@ func pingFunc(meta *FunctionMeta) error {
 	return nil
 }
 
-func InvokeFunc(meta *FunctionMeta, payload []byte) ([]byte, error) {
+func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 	start := time.Now()
 	log.Printf("Start Invoke Function %s at: %s\n", meta.Name, start.Format("2006/01/02 15:04:05"))
 	client, err := rpc.Dial("tcp", "localhost:"+strconv.Itoa(meta.Port))

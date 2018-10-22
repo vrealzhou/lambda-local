@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io/ioutil"
+	"net/http"
+	"strconv"
 
 	"github.com/namsral/flag"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 	"gopkg.in/yaml.v2"
+	"github.com/labstack/echo"
 )
 
 type arguments struct {
@@ -24,29 +28,34 @@ func main() {
 	invoker.LambdaBinBase = "build/lambdas"
 	tmpl := parseTemplate(args.template)
 	functions = tmpl.Functions()
-	funcName := "Test"
 	defer clearUp()
-	payload := []byte(`{
-		"action":"create",
-		"contenttype":"release",
-		"contentid":"mrKyQomBA9",
-		"contentversion":1,
-		"contentsource":"mapi1"
-	}`)
-	result, err := invoke(funcName, payload)
-	if err != nil {
-		log.Fatal("lambda error:", err)
-	}
-	fmt.Printf("lambda: %s\n", string(result))
+	serve(args)
 }
 
-func invoke(name string, payload []byte) ([]byte, error) {
+func serve(args arguments) {
+	e := echo.New()
+	e.POST("/2015-03-31/functions/:function/invocations", invoke)
+	e.Logger.Fatal(e.Start(":"+strconv.Itoa(args.port)))
+}
+
+func invoke(c echo.Context) error {
+	name := c.Param("function")
 	err := invoker.PrepareFunction(name, functions[name])
 	if err != nil {
-		return nil, fmt.Errorf("Error on prepar function Test: %s", err.Error())
+		return fmt.Errorf("Error on prepar function Test: %s", err.Error())
 	}
 	meta := invoker.Functions["Test"]
-	return invoker.InvokeFunc(meta, payload)
+	payload, err := ioutil.ReadAll(c.Request().Body)
+	defer c.Request().Body.Close()
+	if err != nil {
+		return err
+	}
+	result, err := invoker.InvokeFunc(meta, payload)
+	if err != nil {
+		return err
+	}
+	c.JSON(http.StatusOK, result)
+	return nil
 }
 
 func clearUp() {
