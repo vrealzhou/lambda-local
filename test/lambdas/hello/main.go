@@ -1,0 +1,28 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/vrealzhou/lambda-local/test"
+)
+
+var returnMsg = "Hello"
+
+type Message struct {
+	Message string `json:"message,omitempty"`
+}
+
+func handler(input test.Input) (Message, error) {
+	fmt.Printf("Input: %v\n", input)
+	msg := Message{
+		Message: fmt.Sprintf("%s %s", returnMsg, input.Name),
+	}
+	return msg, nil
+}
+
+func main() {
+	returnMsg = os.Getenv("MESSAGE")
+	lambda.Start(handler)
+}

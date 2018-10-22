@@ -171,15 +171,15 @@ Resources:
         deadLetterTargetArn: !GetAtt PAPIDLQ.Arn  # dead letter queue
         maxReceiveCount: 10   # retry maximum 10 times
 
-  Test:
+  Hello:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/lambdas/Test.zip
+      CodeUri: build/lambdas/Hello.zip
       Role: !GetAtt LambdaExecutionRole.Arn
       Environment:
         Variables:
           TERMINUS_REDIS_HOST: !If [IsAWS, !Sub "${ElastiCache.PrimaryEndPoint.Address}:6379", "redis:6379"]
-          MESSAGE: Hello World
+          MESSAGE: Bruce Zhou
       Events:
         IngestorEvent:
           Type: SQS
@@ -190,6 +190,15 @@ Resources:
         SecurityGroupIds:
           - !GetAtt GaryVPC.output_VPCDefaultSecurityGroup
         SubnetIds: !Split [ ',', !GetAtt GaryVPC.output_SubnetPrivate ]
+    
+  Cheers:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/lambdas/Cheers.zip
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          MESSAGE: Bruce Zhou
 
 Outputs:
 
