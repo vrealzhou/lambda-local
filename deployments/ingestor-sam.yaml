@@ -1,0 +1,234 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Terminus V2 ingestors
+
+Parameters:
+  Environment:
+    AllowedValues:
+    - local
+    - development
+    - testing
+    - staging
+    - production
+    Default: local
+    Description: Environment Stage
+    Type: String
+  SumoEndpoint:
+    Default: /terminus/sumoendpoint
+    Type: 'AWS::SSM::Parameter::Value<String>'
+
+Conditions:
+  IsAWS: !Not [!Equals [!Ref Environment, "local"]]
+
+Globals:
+  Function:
+    Runtime: go1.x
+    MemorySize: 256
+    Timeout: 60
+    Handler: main
+    Tracing: Active
+    Environment:
+      Variables:
+        TERMINUS_CAPI_BASE: http://capi.develop.core.wcms.wcms-np.c0.abc.net.au/api/v3/
+        TERMINUS_IVIEW_BASE: https://api.iview.abc.net.au
+        TERMINUS_MAPI_BASE: http://music-dev.abcradio.net.au
+        TERMINUS_PAPI_BASE: http://program-dev.abcradio.net.au
+        TERMINUS_STAGE: !Ref Environment
+        TERMINUS_TTL_LIVE: 1s
+        TERMINUS_TTL_LONG: 300s
+        TERMINUS_TTL_SHORT: 300s
+        TERMINUS_TTL_SHORT_RANDOM: 10s,20s
+        TERMINUS_REDIS_CLUSTER: false
+        TERMINUS_NEWRELIC_LICENSE_PATH: /terminus/newrelic_license_key
+
+Resources:
+
+  ElastiCache:
+    Properties:
+      AutoMinorVersionUpgrade: true
+      AutomaticFailoverEnabled: false
+      CacheNodeType: cache.m4.xlarge
+      CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
+      Engine: redis
+      EngineVersion: 4.0.10
+      NumCacheClusters: 1
+      Port: 6379
+      ReplicationGroupDescription: !Ref AWS::StackName
+      SecurityGroupIds:
+      - !Ref ElastiCacheSG
+    Type: AWS::ElastiCache::ReplicationGroup
+
+  ElastiCacheSG:
+    Properties:
+      GroupDescription: Terminus Redis security group
+      SecurityGroupIngress:
+      - CidrIp: 10.0.0.0/8
+        FromPort: '6379'
+        IpProtocol: tcp
+        ToPort: '6379'
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-sg-redis
+      VpcId: !GetAtt GaryVPC.output_VPC
+    Type: AWS::EC2::SecurityGroup
+
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: ElastiCache Subnet Group
+      SubnetIds: !Split [ ',', !GetAtt GaryVPC.output_SubnetPrivate ]
+
+  GaryVPC:
+    Properties:
+      Inputs:
+        StackName: sandbox-common-vpc
+        fetchOnly:
+          - output_VPC
+          - output_VPCDefaultSecurityGroup
+          - output_SubnetPrivate
+      ServiceToken: !ImportValue common-askgary
+      Task: query_cloudformation
+    Type: AWS::CloudFormation::CustomResource
+
+  LambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: IngestorLambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ReceiveMessage
+                Resource: '*'
+      Path: /customer/
+      RoleName: !Sub ${AWS::StackName}-lambda-execution-role
+    Type: AWS::IAM::Role
+
+  CapiDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-CapiDLQ
+
+  CapiQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-CapiQueue
+      VisibilityTimeout: 60 # in-flight time out 1 min
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt CapiDLQ.Arn  # dead letter queue
+        maxReceiveCount: 10   # retry maximum 10 times
+
+  MAPIDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-MAPIDLQ
+
+  MAPIQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-MAPIQueue
+      VisibilityTimeout: 60 # in-flight time out 1 min
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MAPIDLQ.Arn  # dead letter queue
+        maxReceiveCount: 10   # retry maximum 10 times
+
+  PAPIDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-PAPIDLQ
+
+  PAPIQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600  # 14 days
+      QueueName: !Sub ${AWS::StackName}-PAPIQueue
+      VisibilityTimeout: 60 # in-flight time out 1 min
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PAPIDLQ.Arn  # dead letter queue
+        maxReceiveCount: 10   # retry maximum 10 times
+
+  Test:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/lambdas/Test.zip
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          TERMINUS_REDIS_HOST: !If [IsAWS, !Sub "${ElastiCache.PrimaryEndPoint.Address}:6379", "redis:6379"]
+          MESSAGE: Hello World
+      Events:
+        IngestorEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CapiQueue.Arn
+            BatchSize: 1
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt GaryVPC.output_VPCDefaultSecurityGroup
+        SubnetIds: !Split [ ',', !GetAtt GaryVPC.output_SubnetPrivate ]
+
+Outputs:
+
+  CapiContentRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-CapiContentRequest
+    Value: !GetAtt CapiContentRequest.Arn
+
+  CapiContentSearchRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-CapiContentSearchRequest
+    Value: !GetAtt CapiContentSearchRequest.Arn
+
+  IviewContentRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-IviewContentRequest
+    Value: !GetAtt IviewContentRequest.Arn
+
+  MapiContentRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-MapiContentRequest
+    Value: !GetAtt MapiContentRequest.Arn
+
+  MapiSearchRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-MapiSearchRequest
+    Value: !GetAtt MapiSearchRequest.Arn
+
+  PapiContentRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-PapiContentRequest
+    Value: !GetAtt PapiContentRequest.Arn
+
+  PapiSearchRequestARN:
+    Export:
+      Name: !Sub ${AWS::StackName}-PapiSearchRequest
+    Value: !GetAtt PapiSearchRequest.Arn
+
+  ElastiCacheEndpointAddress:
+    Export:
+      Name: !Sub ${AWS::StackName}-ElastiCacheEndpointAddress
+    Value: !Sub ${ElastiCache.PrimaryEndPoint.Address}

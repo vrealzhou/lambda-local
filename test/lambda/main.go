@@ -2,22 +2,28 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-var returnMsg = flag.String("m", "Hello", "return message")
+var returnMsg = "Hello"
 
-func handler(input json.RawMessage) (json.RawMessage, error) {
+type Message struct {
+	Message string `json:"message,omitempty"`
+}
+
+func handler(input json.RawMessage) (Message, error) {
 	fmt.Printf("Input: %s\n", string(input))
-	return []byte(fmt.Sprintf(`{"Message": "%s"}`, *returnMsg)), nil
+	msg := Message{
+		Message: returnMsg,
+	}
+	return msg, nil
 }
 
 func main() {
-	flag.Parse()
-	os.Setenv("_LAMBDA_SERVER_PORT", "3001")
+	returnMsg = os.Getenv("MESSAGE")
+	fmt.Printf("Port: %s, Message: %s\n", os.Getenv("_LAMBDA_SERVER_PORT"), returnMsg)
 	lambda.Start(handler)
 }
