@@ -2,17 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 
+	"github.com/labstack/echo"
 	"github.com/namsral/flag"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 	"gopkg.in/yaml.v2"
-	"github.com/labstack/echo"
 )
 
 type arguments struct {
@@ -34,7 +35,7 @@ func main() {
 func serve(args arguments) {
 	e := echo.New()
 	e.POST("/2015-03-31/functions/:function/invocations", invoke)
-	e.Logger.Fatal(e.Start(":"+strconv.Itoa(args.port)))
+	e.Logger.Fatal(e.Start(":" + strconv.Itoa(args.port)))
 }
 
 func invoke(c echo.Context) error {
@@ -43,7 +44,7 @@ func invoke(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error on prepar function Test: %s", err.Error())
 	}
-	meta := invoker.Functions["Test"]
+	meta := invoker.Functions[name]
 	payload, err := ioutil.ReadAll(c.Request().Body)
 	defer c.Request().Body.Close()
 	if err != nil {
@@ -90,7 +91,7 @@ func parseTemplate(tmplFile string) template.SAMTemplate {
 func parseArgs() arguments {
 	var args arguments
 	flag.IntVar(&args.port, "port", 3001, "server port")
-	flag.StringVar(&args.template, "template", "deployments/ingestor-sam.yaml", "SAM template file")
+	flag.StringVar(&args.template, "template", filepath.Join(invoker.LambdaBinBase, "ingestor-sam.yaml"), "SAM template file")
 	flag.Parse()
 	return args
 }

@@ -212,7 +212,7 @@ func unzip(src string, target string) error {
 
 		// Store filename/path for returning and using later on
 		fpath := filepath.Join(target, f.Name)
-		fmt.Printf("Unzip %s to %s", f.Name, fpath)
+		fmt.Printf("Unzip %s to %s\n", f.Name, fpath)
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(target)+string(os.PathSeparator)) {

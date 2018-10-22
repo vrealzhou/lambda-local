@@ -1,6 +1,7 @@
 package invoke
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/vrealzhou/lambda-local/test"
 )
 
 var client *lambda.Lambda
@@ -28,15 +30,13 @@ func TestMain(m *testing.M) {
 }
 
 func BenchmarkLambdaInvoke(b *testing.B) {
+	input := test.Input{
+		Name: "Bruce Zhou",
+	}
+	payload, _ := json.Marshal(input)
 	req := &lambda.InvokeInput{
-		FunctionName: aws.String("Test"),
-		Payload: []byte(`{
-			"action":"create",
-			"contenttype":"release",
-			"contentid":"mrKyQomBA9",
-			"contentversion":1,
-			"contentsource":"mapi1"
-		}`),
+		FunctionName: aws.String("Hello"),
+		Payload:      payload,
 	}
 	resp, err := client.Invoke(req)
 	if err != nil {

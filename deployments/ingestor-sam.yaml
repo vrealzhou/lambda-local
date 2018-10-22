@@ -179,7 +179,7 @@ Resources:
       Environment:
         Variables:
           TERMINUS_REDIS_HOST: !If [IsAWS, !Sub "${ElastiCache.PrimaryEndPoint.Address}:6379", "redis:6379"]
-          MESSAGE: Bruce Zhou
+          MESSAGE: Hello
       Events:
         IngestorEvent:
           Type: SQS
@@ -198,7 +198,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Environment:
         Variables:
-          MESSAGE: Bruce Zhou
+          MESSAGE: Cheers
 
 Outputs:
 
