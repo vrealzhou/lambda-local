@@ -43,13 +43,18 @@ func (t SAMTemplate) Functions() map[string]Function {
 					res.Properties.Environment.Variables[k] = v
 				}
 			}
-			functions[name] = res
+			if res.Properties.Name != "" {
+				functions[res.Properties.Name] = res
+			} else {
+				functions[name] = res
+			}
 		}
 	}
 	return functions
 }
 
 type FunctionSetting struct {
+	Name        string `yaml:"Name,omitempty"`
 	CodeURI     string `yaml:"CodeUri,omitempty"`
 	Runtime     string `yaml:"Runtime,omitempty"`
 	MemorySize  int    `yaml:"MemorySize,omitempty"`
