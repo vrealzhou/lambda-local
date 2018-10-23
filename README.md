@@ -9,9 +9,12 @@ This is a tool to run AWS Lambda locally and keep warm.
 
 ## Install
 
+Because this project is using go mod which shouldn't been cloned to GOPATH.
+
 ```shell
-go get github.com/vrealzhou/lambda-local
-cd $GOPATH/src/github.com/vrealzhou/lambda-local
+cd $NON_GOPATH
+git clone github.com/vrealzhou/lambda-local.git
+cd $NON_GOPATH/lambda-local
 go install
 ```
 
