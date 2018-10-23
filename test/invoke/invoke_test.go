@@ -29,13 +29,30 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func BenchmarkLambdaInvoke(b *testing.B) {
+func BenchmarkLambdaHelloInvoke(b *testing.B) {
 	input := test.Input{
 		Name: "Bruce Zhou",
 	}
 	payload, _ := json.Marshal(input)
 	req := &lambda.InvokeInput{
 		FunctionName: aws.String("Hello"),
+		Payload:      payload,
+	}
+	resp, err := client.Invoke(req)
+	if err != nil {
+		b.Error(err)
+	}
+	fmt.Printf("Response: %s\n", string(resp.Payload))
+}
+
+
+func BenchmarkLambdaCheersInvoke(b *testing.B) {
+	input := test.Input{
+		Name: "Bruce Zhou",
+	}
+	payload, _ := json.Marshal(input)
+	req := &lambda.InvokeInput{
+		FunctionName: aws.String("Cheers"),
 		Payload:      payload,
 	}
 	resp, err := client.Invoke(req)
