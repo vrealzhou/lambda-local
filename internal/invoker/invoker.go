@@ -17,10 +17,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda/messages"
 	uuid "github.com/satori/go.uuid"
+	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 )
 
-var LambdaBinBase = "/var/lambdas"
 var Functions = make(map[string]*FunctionMeta)
 var ConnError = errors.New("Conn Error")
 
@@ -43,8 +43,8 @@ func PrepareFunction(name string, function template.Function) error {
 	}
 	// locate exec file
 	splits := strings.Split(function.Properties.CodeURI, "/")
-	zipFile := filepath.Join(LambdaBinBase, splits[len(splits)-1])
-	target := filepath.Join(LambdaBinBase, name)
+	zipFile := filepath.Join(config.LambdaBase(), splits[len(splits)-1])
+	target := filepath.Join(config.LambdaBase(), name)
 	log.Printf("lambda zip file: %s, lambda exec path: %s\n", zipFile, target)
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		err := os.MkdirAll(target, os.ModePerm)
@@ -70,7 +70,7 @@ func PrepareFunction(name string, function template.Function) error {
 			break
 		}
 	}
-	command := filepath.Join(LambdaBinBase, name, function.Properties.Handler)
+	command := filepath.Join(config.LambdaBase(), name, function.Properties.Handler)
 	env := make([]string, 0)
 	for key, val := range function.Properties.Environment.Variables {
 		if os.Getenv(key) == "" {

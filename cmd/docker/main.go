@@ -6,36 +6,43 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/labstack/echo"
-	"github.com/namsral/flag"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 	"gopkg.in/yaml.v2"
 )
 
-type arguments struct {
-	port     int
-	template string
-}
-
 var functions map[string]template.Function
 
-func main() {
-	args := parseArgs()
-	flag.Parse()
-	tmpl := parseTemplate(args.template)
-	functions = tmpl.Functions()
-	defer clearUp()
-	serve(args)
+var rootCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run lambda service",
+	Long:  "Run lambda service",
+	Run: func(cmd *cobra.Command, args []string) {
+		tmpl := parseTemplate(config.Template())
+		functions = tmpl.Functions()
+		defer clearUp()
+		serve()
+	},
 }
 
-func serve(args arguments) {
+func main() {
+	parseArgs()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func serve() {
 	e := echo.New()
 	e.POST("/2015-03-31/functions/:function/invocations", invoke)
-	e.Logger.Fatal(e.Start(":" + strconv.Itoa(args.port)))
+	e.Logger.Fatal(e.Start(":" + strconv.Itoa(config.Port())))
 }
 
 func invoke(c echo.Context) error {
@@ -71,7 +78,7 @@ func clearUp() {
 
 func parseTemplate(tmplFile string) template.SAMTemplate {
 	if tmplFile == "" {
-		panic("Please specify template file via -template={filename}")
+		panic("Please specify template file via --template {filename}")
 	}
 	f, err := os.Open(tmplFile)
 	if err != nil {
@@ -88,10 +95,14 @@ func parseTemplate(tmplFile string) template.SAMTemplate {
 	return tmpl
 }
 
-func parseArgs() arguments {
-	var args arguments
-	flag.IntVar(&args.port, "port", 3001, "server port")
-	flag.StringVar(&args.template, "template", filepath.Join(invoker.LambdaBinBase, "ingestor-sam.yaml"), "SAM template file")
-	flag.Parse()
-	return args
+func parseArgs() {
+	var port int
+	var template string
+	var lambdaBase string
+	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 3001, "Service port")
+	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "/var/lambdas/ingestor-sam.yaml", "SAM template file")
+	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
+	rootCmd.PersistentFlags().StringVarP(&lambdaBase, "base", "b", "/var/lambdas", "Lambda base dir")
+	viper.BindPFlag("lambdaBase", rootCmd.PersistentFlags().Lookup("base"))
 }
