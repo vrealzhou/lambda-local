@@ -5,10 +5,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 	"os/exec"
 	"strconv"
 
 	"github.com/docker/docker/api/types"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
@@ -33,16 +36,43 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	if err != nil {
 		return err
 	}
+	usr, err := user.Current()
+	if err != nil {
+		return err
+	}
+	creds := credentials.NewSharedCredentials(filepath.Join(usr.HomeDir, ".aws", "credentials"), config.Profile())
+	value, err := creds.Get()
+	if err != nil {
+		return err
+	}
+	env := []string{
+		"PORT=" + innerPort,
+		"AWS_ACCESS_KEY_ID=" + value.AccessKeyID,
+		"AWS_SECRET_ACCESS_KEY=" + value.SecretAccessKey,
+		"AWS_SESSION_TOKEN=" + value.SessionToken,
+		"AWS_DEFAULT_REGION=" + config.AWSRegion(),
+		"AWS_REGION=" + config.AWSRegion(),
+	}
+	funcEnv := make(map[string]string)
+	for _, f := range functions {
+		for key := range f.Properties.Environment.Variables {
+			if ev := os.Getenv(key); ev != "" {
+				funcEnv[key] = ev
+			}
+		}
+	}
+	for key, val := range funcEnv {
+		env = append(env, key+"="+val)
+	}
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		AttachStdout: true,
 		AttachStderr: true,
 		Image:        imageName,
 		ExposedPorts: nat.PortSet{p: {}},
-		Env: []string{
-			"PORT=" + innerPort,
-		},
+		Env: env,
 		Cmd: strslice.StrSlice{"/var/lambdas/main"},
 	}, &container.HostConfig{
+		NetworkMode: config.NetworkMode(),
 		PortBindings: nat.PortMap{p: []nat.PortBinding{
 			{
 				HostIP:   "0.0.0.0",

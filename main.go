@@ -88,6 +88,8 @@ func parseArgs() {
 	var port int
 	var profile string
 	var template string
+	var network string
+	var awsRegion string
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 3001, "Service port")
 	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "default", "AWS credential profile name")
@@ -95,6 +97,10 @@ func parseArgs() {
 	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "", "SAM template file")
 	rootCmd.MarkFlagRequired("template")
 	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
+	rootCmd.PersistentFlags().StringVarP(&network, "docker-network", "n", "bridge", "Docker network mode")
+	viper.BindPFlag("networkMode", rootCmd.PersistentFlags().Lookup("docker-network"))
+	rootCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "r", "", "AWS region")
+	viper.BindPFlag("aws_region", rootCmd.PersistentFlags().Lookup("aws-region"))
 }
 
 func listenSignal(ctx context.Context, cli *client.Client) {

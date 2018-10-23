@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/docker/docker/api/types/container"
 	"github.com/spf13/viper"
 )
 
@@ -22,6 +23,14 @@ func Payload() string {
 
 func SetPayload(payload string) {
 	viper.Set("payload", payload)
+}
+
+func NetworkMode() container.NetworkMode {
+	return container.NetworkMode(viper.GetString("networkMode"))
+}
+
+func AWSRegion() string {
+	return viper.GetString("aws_region")
 }
 
 func ContainerID() string {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -14,8 +15,12 @@ type Message struct {
 	Message string `json:"message,omitempty"`
 }
 
-func handler(input test.Input) (Message, error) {
+func handler(ctx context.Context, input test.Input) (Message, error) {
 	fmt.Printf("Input: %v\n", input)
+	deadline, ok := ctx.Deadline()
+	if ok {
+		fmt.Printf("Deadline: %s\n", deadline.Format("2006-01-02 15:04:05"))
+	}
 	msg := Message{
 		Message: fmt.Sprintf("%s %s", returnMsg, input.Name),
 	}

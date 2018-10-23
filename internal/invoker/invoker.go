@@ -178,7 +178,7 @@ func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 		Payload:   payload,
 		RequestId: u1.String(),
 		Deadline: messages.InvokeRequest_Timestamp{
-			Seconds: meta.TimeoutSec,
+			Seconds: time.Now().Unix() + meta.TimeoutSec,
 		},
 		InvokedFunctionArn: meta.Arn,
 	}
