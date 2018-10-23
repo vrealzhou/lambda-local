@@ -1,11 +1,19 @@
 # lambda-local
-This is a tool to run AWS Lambda locally and keep warm.
+This is a tool to run AWS Lambda locally and keep warm. The original perpose is for local testing AWS Lambda more effecient.
 
-**NOTE:** This program has very limited feature which only match my work requirement. Anyone intested in it can make a fork and add yourself.
+**NOTE:** 
+* This program is only for test if Lambda function logic correct without deploy. It doesn't provide full feature of cloud version Lambdas.
+* It has very limited feature which only match my work requirement. Anyone intested in it can make a fork and add yourself.
 
 ## Requitements
 * go 1.11 or above
 * docker v18 or above
+
+## Limits
+
+* Only support Lambdas written in Go with [AWS Go Library](https://github.com/aws/aws-lambda-go)
+* Lambdas should be defined in [AWS SAM yaml file](https://docs.aws.amazon.com/lambda/latest/dg/serverless_app.html)
+* Same Lambda can only be invoked in a queue no matter the request side is concurrent or not.
 
 ## Install
 
