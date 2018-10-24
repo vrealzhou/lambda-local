@@ -8,6 +8,7 @@ This is a tool to run AWS Lambda locally and keep warm. The original perpose is 
 ## Requitements
 * go 1.11 or above
 * docker v18 or above
+* You need to setup valid credentials in ~/.aws/credentials file.
 
 ## Limits
 
