@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	log "github.com/sirupsen/logrus"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
@@ -24,7 +24,10 @@ var rootCmd = &cobra.Command{
 	Short: "Run lambda service",
 	Long:  "Run lambda service",
 	Run: func(cmd *cobra.Command, args []string) {
-		tmpl := parseTemplate(config.Template())
+		tmpl, err := parseTemplate(config.Template())
+		if err != nil {
+			log.Fatal(err)
+		}
 		functions = tmpl.Functions()
 		defer clearUp()
 		serve()
@@ -67,32 +70,31 @@ func invoke(c echo.Context) error {
 
 func clearUp() {
 	for name, f := range invoker.Functions {
-		log.Printf("Stop function %s, process id: %d", name, f.Pid)
+		log.Debugf("Stop function %s, process id: %d", name, f.Pid)
 		proc, err := os.FindProcess(f.Pid)
 		if err != nil {
-			log.Printf("Error on find process: %d", f.Pid)
+			log.Errorf("Error on find process: %d", f.Pid)
 		}
 		proc.Kill()
 	}
 }
 
-func parseTemplate(tmplFile string) template.SAMTemplate {
+func parseTemplate(tmplFile string) (t template.SAMTemplate, err error) {
 	if tmplFile == "" {
-		panic("Please specify template file via --template {filename}")
+		return t, fmt.Errorf("Please specify template file via --template {filename}")
 	}
 	f, err := os.Open(tmplFile)
 	if err != nil {
-		panic(err)
+		return t, fmt.Errorf("Error when open template file %s: %s", tmplFile, err.Error())
 	}
 	defer f.Close()
 	d := yaml.NewDecoder(f)
 	d.SetStrict(false)
-	tmpl := template.SAMTemplate{}
-	err = d.Decode(&tmpl)
+	err = d.Decode(&t)
 	if err != nil {
-		panic(err)
+		return t, fmt.Errorf("Error when decoding template file %s: %s", tmplFile, err.Error())
 	}
-	return tmpl
+	return t, nil
 }
 
 func parseArgs() {

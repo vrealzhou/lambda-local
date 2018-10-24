@@ -3,7 +3,6 @@ package docker
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
+	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/vrealzhou/lambda-local/internal/template"
@@ -117,7 +117,7 @@ func DeleteContainer(ctx context.Context, cli *client.Client) error {
 
 func copyToContainer(ctx context.Context, cli *client.Client, dstPath, filename string) error {
 	args := []string{"cp", filename, config.ContainerID() + ":" + dstPath}
-	log.Printf("Command: docker %s\n", args)
+	log.Debugf("Command: docker %s\n", args)
 	cmd := exec.Command("docker", args...)
 	if err := cmd.Run(); err != nil {
 		return err

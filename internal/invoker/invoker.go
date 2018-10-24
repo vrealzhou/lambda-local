@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/rpc"
 	"os"
 	"os/exec"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda/messages"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 )
@@ -45,7 +45,7 @@ func PrepareFunction(name string, function template.Function) error {
 	splits := strings.Split(function.Properties.CodeURI, "/")
 	zipFile := filepath.Join(config.LambdaBase(), splits[len(splits)-1])
 	target := filepath.Join(config.LambdaBase(), name)
-	log.Printf("lambda zip file: %s, lambda exec path: %s\n", zipFile, target)
+	log.Debugf("lambda zip file: %s, lambda exec path: %s\n", zipFile, target)
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		err := os.MkdirAll(target, os.ModePerm)
 		if err != nil {
@@ -79,7 +79,7 @@ func PrepareFunction(name string, function template.Function) error {
 	}
 	env = append(env, os.Environ()...)
 	env = append(env, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
-	log.Printf("Command: %s, env: %v\n", command, env)
+	log.Debugf("Command: %s, env: %v\n", command, env)
 	cmd := exec.Command(command)
 	cmd.Env = env
 	stdoutIn, err := cmd.StdoutPipe()
@@ -100,15 +100,15 @@ func PrepareFunction(name string, function template.Function) error {
 	go func() {
 		defer delete(Functions, name)
 		if err := cmd.Start(); err != nil {
-			log.Printf("Error on starting function %s: %s", name, err.Error())
+			log.Errorf("Error on starting function %s: %s", name, err.Error())
 			return
 		}
 		meta.Pid = cmd.Process.Pid
-		log.Printf("Function %s started, Pid is %d", name, meta.Pid)
+		log.Debugf("Function %s started, Pid is %d", name, meta.Pid)
 		if err := cmd.Wait(); err != nil {
-			log.Printf("Function %s returned error: %v", name, err)
+			log.Errorf("Function %s returned error: %v", name, err)
 		}
-		log.Printf("Function %s finished", name)
+		log.Debugf("Function %s finished", name)
 	}()
 	WaitFuncReady(meta)
 	return nil
@@ -141,7 +141,7 @@ func WaitFuncReady(meta *FunctionMeta) {
 			if err == ConnError {
 				time.Sleep(50 * time.Millisecond)
 			} else {
-				log.Fatal(err)
+				log.Fatalf("Lambda %s is crashed: %s", meta.Name, err)
 				return
 			}
 		} else {
@@ -167,7 +167,8 @@ func pingFunc(meta *FunctionMeta) error {
 
 func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 	start := time.Now()
-	log.Printf("Start Invoke Function %s at: %s\n", meta.Name, start.Format("2006/01/02 15:04:05"))
+	log.Debugf("Invoke Function %s with Payload: %s", meta.Name, string(payload))
+	log.Infof("Start Invoke Function %s at: %s\n", meta.Name, start.Format("2006/01/02 15:04:05"))
 	client, err := rpc.Dial("tcp", "localhost:"+strconv.Itoa(meta.Port))
 	if err != nil {
 		return nil, err
@@ -186,13 +187,18 @@ func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 	invokeStart := time.Now()
 	err = client.Call("Function.Invoke", req, response)
 	invokeEnd := time.Now()
-	log.Printf("Invoke Function %s preparing took: %s; Invoke took: %s; Total time cost: %s; Payload: %s\n", meta.Name, invokeStart.Sub(start), invokeEnd.Sub(invokeStart), invokeEnd.Sub(start), string(response.Payload))
+	log.Infof("Invoke Function %s preparing took: %s; Invoke took: %s; Total time cost: %s\n", meta.Name, invokeStart.Sub(start), invokeEnd.Sub(invokeStart), invokeEnd.Sub(start))
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
-		return json.Marshal(response.Error)
+		respErr, err := json.Marshal(response.Error)
+		if err != nil {
+			return nil, err
+		}
+		log.Debugf("Function %s with result: %s", meta.Name, string(respErr))
 	}
+	log.Debugf("Function %s with result: %s", meta.Name, string(response.Payload))
 	return response.Payload, nil
 }
 
@@ -212,7 +218,7 @@ func unzip(src string, target string) error {
 
 		// Store filename/path for returning and using later on
 		fpath := filepath.Join(target, f.Name)
-		fmt.Printf("Unzip %s to %s\n", f.Name, fpath)
+		log.Debugf("Unzip %s to %s\n", f.Name, fpath)
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(target)+string(os.PathSeparator)) {
