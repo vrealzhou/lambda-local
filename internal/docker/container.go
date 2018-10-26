@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
-	"os/exec"
 	"strconv"
 
-	"github.com/docker/docker/api/types"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/vrealzhou/lambda-local/internal/template"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	config "github.com/vrealzhou/lambda-local/config/cmd"
+	"github.com/vrealzhou/lambda-local/internal/template"
 	"golang.org/x/net/context"
 )
 
@@ -25,7 +26,7 @@ const (
 	imageName = "vreal/lambda-local-go:latest"
 )
 
-func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map[string]template.Function) (error) {
+func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map[string]template.Function) error {
 	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 	if err != nil {
 		return err
@@ -52,6 +53,7 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 		"AWS_SESSION_TOKEN=" + value.SessionToken,
 		"AWS_DEFAULT_REGION=" + config.AWSRegion(),
 		"AWS_REGION=" + config.AWSRegion(),
+		"DEBUG=" + viper.GetString("debug"),
 	}
 	funcEnv := make(map[string]string)
 	for _, f := range functions {
@@ -69,8 +71,8 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 		AttachStderr: true,
 		Image:        imageName,
 		ExposedPorts: nat.PortSet{p: {}},
-		Env: env,
-		Cmd: strslice.StrSlice{"/var/lambdas/main"},
+		Env:          env,
+		Cmd:          strslice.StrSlice{"/var/lambdas/main"},
 	}, &container.HostConfig{
 		NetworkMode: config.NetworkMode(),
 		PortBindings: nat.PortMap{p: []nat.PortBinding{
@@ -82,7 +84,7 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 		AutoRemove: true,
 	}, nil, "lambda-local-go")
 	if err != nil {
-		return  err
+		return err
 	}
 	fmt.Println("containerID:", resp.ID)
 	config.SetContainerID(resp.ID)

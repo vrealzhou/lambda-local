@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	log "github.com/sirupsen/logrus"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
@@ -107,4 +108,9 @@ func parseArgs() {
 	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
 	rootCmd.PersistentFlags().StringVarP(&lambdaBase, "base", "b", "/var/lambdas", "Lambda base dir")
 	viper.BindPFlag("lambdaBase", rootCmd.PersistentFlags().Lookup("base"))
+	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
+	if debug {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.SetFormatter(&log.TextFormatter{})
 }
