@@ -63,7 +63,14 @@ func invoke(c echo.Context) error {
 	}
 	result, err := invoker.InvokeFunc(meta, payload)
 	if err != nil {
-		return err
+		if result != nil {
+			c.Response().Header().Set("X-Amz-Executed-Version", "$LATEST")
+			c.Response().Header().Set("X-Amz-Function-Error", "Unhandled")
+			c.JSONBlob(http.StatusOK, result)
+			return nil
+		} else {
+			return err
+		}
 	}
 	c.JSON(http.StatusOK, result)
 	return nil

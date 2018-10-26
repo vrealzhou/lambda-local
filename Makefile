@@ -11,7 +11,7 @@ build-lambda:
 
 build-docker:
 	$(GOBUILD) -o build/docker/main cmd/docker/main.go
-	docker rmi vreal/lambda-local-go:latest || exit 0
+	docker rmi vreal/lambda-local-go || exit 0
 	docker build -t vreal/lambda-local-go:latest build/docker/
 	docker push vreal/lambda-local-go:latest
 	docker tag vreal/lambda-local-go:latest $(DOCKER_VER)
