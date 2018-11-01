@@ -21,9 +21,8 @@ This is a tool to run AWS Lambda locally and keep warm. The original perpose is 
 Because this project is using go mod which shouldn't been cloned to GOPATH.
 
 ```shell
-export GO111MODULE=on
-go install github.com/vrealzhou/lambda-local
-export GO111MODULE=auto
+git clone github.com/vrealzhou/lambda-local
+go install
 ```
 
 After installed you can use such command under your lambda project to start local test:
