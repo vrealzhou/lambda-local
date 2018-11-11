@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	log "github.com/sirupsen/logrus"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
@@ -99,12 +99,18 @@ func parseTemplate(tmplFile string) (t template.SAMTemplate, err error) {
 
 func parseArgs() {
 	var port int
-	var template string
-	var lambdaBase string
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 3001, "Service port")
 	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+
+	var template string
 	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "/var/lambdas/ingestor-sam.yaml", "SAM template file")
 	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
+
+	var lambdaBase string
 	rootCmd.PersistentFlags().StringVarP(&lambdaBase, "base", "b", "/var/lambdas", "Lambda base dir")
 	viper.BindPFlag("lambdaBase", rootCmd.PersistentFlags().Lookup("base"))
+
+	var env string
+	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", "", "Env json file")
+	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
 }
