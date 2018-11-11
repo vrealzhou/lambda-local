@@ -19,6 +19,7 @@ import (
 func main() {
 	rootCmd.AddCommand(startLambdaCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(invokeCmd)
 	parseArgs()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -28,6 +29,19 @@ func main() {
 
 var rootCmd = &cobra.Command{
 	Long: "Local lambda invoke service. Require docker installed.",
+}
+
+var invokeCmd = &cobra.Command{
+	Use:              "invoke [flags] function-name",
+	Short:            "Invoke specified function locally",
+	TraverseChildren: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Printf("requires at least one arg\n")
+			return
+		}
+		fmt.Printf("Execute function %s in template %s with reload: %t\n", args[0], viper.GetString("template"), viper.GetBool("reload"))
+	},
 }
 
 var startLambdaCmd = &cobra.Command{
@@ -86,21 +100,33 @@ func parseTemplate() template.SAMTemplate {
 
 func parseArgs() {
 	var port int
-	var profile string
-	var template string
-	var network string
-	var awsRegion string
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 3001, "Service port")
 	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+
+	var profile string
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "default", "AWS credential profile name")
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
+
+	var template string
 	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "", "SAM template file")
 	rootCmd.MarkFlagRequired("template")
 	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
+
+	var network string
 	rootCmd.PersistentFlags().StringVarP(&network, "docker-network", "n", "bridge", "Docker network mode")
 	viper.BindPFlag("networkMode", rootCmd.PersistentFlags().Lookup("docker-network"))
+
+	var env string
+	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", "", "Env json file")
+	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+
+	var awsRegion string
 	rootCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "r", "", "AWS region")
 	viper.BindPFlag("aws_region", rootCmd.PersistentFlags().Lookup("aws-region"))
+
+	var reload bool
+	invokeCmd.Flags().BoolVar(&reload, "reload", true, "reload lambda")
+	viper.BindPFlag("reload", invokeCmd.Flags().Lookup("reload"))
 }
 
 func listenSignal(ctx context.Context, cli *client.Client) {
