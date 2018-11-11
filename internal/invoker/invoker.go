@@ -23,6 +23,7 @@ import (
 
 var Functions = make(map[string]*FunctionMeta)
 var ConnError = errors.New("Conn Error")
+var ExecError = errors.New("Exec Error")
 
 type FunctionMeta struct {
 	Name       string
@@ -192,14 +193,46 @@ func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 		return nil, err
 	}
 	if response.Error != nil {
-		respErr, err := json.Marshal(response.Error)
-		if err != nil {
-			return nil, err
-		}
-		log.Debugf("Function %s with result: %s", meta.Name, string(respErr))
+		wrap := FromInvokErr(response.Error)
+		wrappedErr, _ := json.Marshal(wrap)
+		log.Debugf("Function %s with result: %s", meta.Name, string(wrappedErr))
+		return wrappedErr, ExecError
 	}
 	log.Debugf("Function %s with result: %s", meta.Name, string(response.Payload))
 	return response.Payload, nil
+}
+
+func FromInvokErr(e *messages.InvokeResponse_Error) errWrapper {
+	wrap := errWrapper{
+		ErrorMessage: e.Message,
+		ErrorType:    e.Type,
+	}
+	if e.StackTrace != nil {
+		stackTrace := make([]errStackTrace, 0)
+		for _, trace := range e.StackTrace {
+			t := errStackTrace{
+				Path:  trace.Path,
+				Line:  trace.Line,
+				Label: trace.Label,
+			}
+			stackTrace = append(stackTrace, t)
+		}
+		wrap.StackTrace = stackTrace
+	}
+	return wrap
+}
+
+// ErrWrapper used for wrap unhandled error message from lambda
+type errWrapper struct {
+	ErrorMessage string          `json:"errorMessage,omitempty"`
+	ErrorType    string          `json:"errorType,omitempty"`
+	StackTrace   []errStackTrace `json:"stackTrace,omitempty"`
+}
+
+type errStackTrace struct {
+	Path  string `json:"path"`
+	Line  int32  `json:"line"`
+	Label string `json:"label"`
 }
 
 func unzip(src string, target string) error {

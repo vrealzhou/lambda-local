@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +63,14 @@ func invoke(c echo.Context) error {
 	}
 	result, err := invoker.InvokeFunc(meta, payload)
 	if err != nil {
-		return err
+		if result != nil {
+			c.Response().Header().Set("X-Amz-Executed-Version", "$LATEST")
+			c.Response().Header().Set("X-Amz-Function-Error", "Unhandled")
+			c.JSONBlob(http.StatusOK, result)
+			return nil
+		} else {
+			return err
+		}
 	}
 	c.JSON(http.StatusOK, result)
 	return nil
@@ -113,4 +121,10 @@ func parseArgs() {
 	var env string
 	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", "", "Env json file")
 	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+
+	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
+	if debug {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.SetFormatter(&log.TextFormatter{})
 }

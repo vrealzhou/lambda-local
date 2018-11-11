@@ -127,6 +127,10 @@ func parseArgs() {
 	var reload bool
 	invokeCmd.Flags().BoolVar(&reload, "reload", true, "reload lambda")
 	viper.BindPFlag("reload", invokeCmd.Flags().Lookup("reload"))
+
+	var debug bool
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Turn on/off debug")
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 }
 
 func listenSignal(ctx context.Context, cli *client.Client) {
