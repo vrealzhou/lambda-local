@@ -17,14 +17,23 @@ import (
 	"github.com/aws/aws-lambda-go/lambda/messages"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/template"
 )
 
+// Functions holds all functions' meta data
 var Functions = make(map[string]*FunctionMeta)
-var ConnError = errors.New("Conn Error")
-var ExecError = errors.New("Exec Error")
 
+// ErrConn defines connection error to lambda
+var ErrConn = errors.New("Conn Error")
+
+// ErrExec defines error on execute lambda
+var ErrExec = errors.New("Exec Error")
+
+var envSettings = make(map[string]map[string]string)
+
+// FunctionMeta defines struct of function meta data
 type FunctionMeta struct {
 	Name       string
 	Arn        string
@@ -33,6 +42,7 @@ type FunctionMeta struct {
 	Pid        int
 }
 
+// PrepareFunction preload function and make it ready to invoke
 func PrepareFunction(name string, function template.Function) error {
 	if _, ok := Functions[name]; ok {
 		return nil
@@ -72,17 +82,10 @@ func PrepareFunction(name string, function template.Function) error {
 		}
 	}
 	command := filepath.Join(config.LambdaBase(), name, function.Properties.Handler)
-	env := make([]string, 0)
-	for key, val := range function.Properties.Environment.Variables {
-		if os.Getenv(key) == "" {
-			env = append(env, key+"="+val)
-		}
-	}
-	env = append(env, os.Environ()...)
-	env = append(env, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
-	log.Debugf("Command: %s, env: %v\n", command, env)
+	envs := generateEnvs(name, function, meta)
+	log.Debugf("Command: %s, envs: %v\n", command, envs)
 	cmd := exec.Command(command)
-	cmd.Env = env
+	cmd.Env = envs
 	stdoutIn, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -115,6 +118,34 @@ func PrepareFunction(name string, function template.Function) error {
 	return nil
 }
 
+func generateEnvs(name string, function template.Function, meta *FunctionMeta) []string {
+	envs := make([]string, 0)
+	extraEnvs := envSettings[name]
+	for key, val := range function.Properties.Environment.Variables {
+		if extraVal, ok := extraEnvs[key]; ok {
+			envs = append(envs, key+"="+extraVal)
+			continue
+		} else if os.Getenv(key) != "" {
+			continue
+		}
+		envs = append(envs, key+"="+val)
+	}
+	for _, env := range os.Environ() {
+		index := strings.Index(env, "=")
+		if index <= 0 || index == len(env)-1 {
+			continue
+		}
+		key := env[:index]
+		val := env[index+1:]
+		if _, ok := extraEnvs[key]; ok {
+			continue
+		}
+		envs = append(envs, key+"="+val)
+	}
+	envs = append(envs, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
+	return envs
+}
+
 func copyAndCapture(w io.Writer, r io.Reader) {
 	buf := make([]byte, 1024, 1024)
 	for {
@@ -135,11 +166,12 @@ func copyAndCapture(w io.Writer, r io.Reader) {
 	}
 }
 
+// WaitFuncReady waits for specified Lambda function service ready to invoke.
 func WaitFuncReady(meta *FunctionMeta) {
 	for {
 		err := pingFunc(meta)
 		if err != nil {
-			if err == ConnError {
+			if err == ErrConn {
 				time.Sleep(50 * time.Millisecond)
 			} else {
 				log.Fatalf("Lambda %s is crashed: %s", meta.Name, err)
@@ -154,7 +186,7 @@ func WaitFuncReady(meta *FunctionMeta) {
 func pingFunc(meta *FunctionMeta) error {
 	client, err := rpc.Dial("tcp", "localhost:"+strconv.Itoa(meta.Port))
 	if err != nil {
-		return ConnError
+		return ErrConn
 	}
 	defer client.Close()
 	req := &messages.PingRequest{}
@@ -166,6 +198,7 @@ func pingFunc(meta *FunctionMeta) error {
 	return nil
 }
 
+// InvokeFunc do the invoke operation to specified Lambda function
 func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 	start := time.Now()
 	log.Debugf("Invoke Function %s with Payload: %s", meta.Name, string(payload))
@@ -193,16 +226,17 @@ func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
 		return nil, err
 	}
 	if response.Error != nil {
-		wrap := FromInvokErr(response.Error)
+		wrap := fromInvokErr(response.Error)
 		wrappedErr, _ := json.Marshal(wrap)
 		log.Debugf("Function %s with result: %s", meta.Name, string(wrappedErr))
-		return wrappedErr, ExecError
+		return wrappedErr, ErrExec
 	}
 	log.Debugf("Function %s with result: %s", meta.Name, string(response.Payload))
 	return response.Payload, nil
 }
 
-func FromInvokErr(e *messages.InvokeResponse_Error) errWrapper {
+// fromInvokErr wraps the raw error from lambda to standard lambda error struct.
+func fromInvokErr(e *messages.InvokeResponse_Error) errWrapper {
 	wrap := errWrapper{
 		ErrorMessage: e.Message,
 		ErrorType:    e.Type,
@@ -276,6 +310,19 @@ func unzip(src string, target string) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+// LoadEnvFile loads extra env json file
+func LoadEnvFile(file string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return fmt.Errorf("Error on opening env file %s: %s", file, err.Error())
+	}
+	err = json.NewDecoder(f).Decode(&envSettings)
+	if err != nil {
+		return fmt.Errorf("Error on parsing env file %s: %s", file, err.Error())
 	}
 	return nil
 }

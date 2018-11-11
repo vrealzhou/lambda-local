@@ -25,6 +25,13 @@ var rootCmd = &cobra.Command{
 	Short: "Run lambda service",
 	Long:  "Run lambda service",
 	Run: func(cmd *cobra.Command, args []string) {
+		envFile := config.EnvFile()
+		if envFile != "" {
+			err := invoker.LoadEnvFile(envFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 		tmpl, err := parseTemplate(config.Template())
 		if err != nil {
 			log.Fatal(err)
@@ -68,9 +75,8 @@ func invoke(c echo.Context) error {
 			c.Response().Header().Set("X-Amz-Function-Error", "Unhandled")
 			c.JSONBlob(http.StatusOK, result)
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 	c.JSON(http.StatusOK, result)
 	return nil
@@ -118,9 +124,9 @@ func parseArgs() {
 	rootCmd.PersistentFlags().StringVarP(&lambdaBase, "base", "b", "/var/lambdas", "Lambda base dir")
 	viper.BindPFlag("lambdaBase", rootCmd.PersistentFlags().Lookup("base"))
 
-	var env string
-	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", "", "Env json file")
-	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+	if os.Getenv("ENV_JSON") == "true" {
+		viper.SetDefault("env", "/var/lambdas/env.json")
+	}
 
 	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
 	if debug {

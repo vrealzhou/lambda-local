@@ -17,15 +17,17 @@ import (
 	"github.com/docker/go-connections/nat"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/net/context"
+
 	config "github.com/vrealzhou/lambda-local/config/cmd"
 	"github.com/vrealzhou/lambda-local/internal/template"
-	"golang.org/x/net/context"
 )
 
 const (
 	imageName = "vreal/lambda-local-go:latest"
 )
 
+// StartLambdaContainer starts lambda container
 func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map[string]template.Function) error {
 	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 	if err != nil {
@@ -103,6 +105,7 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	return nil
 }
 
+// StopContainer stops lambda container
 func StopContainer(ctx context.Context, cli *client.Client) error {
 	if err := cli.ContainerKill(ctx, config.ContainerID(), ""); err != nil {
 		return err
@@ -110,6 +113,7 @@ func StopContainer(ctx context.Context, cli *client.Client) error {
 	return nil
 }
 
+// DeleteContainer deletes lambda container
 func DeleteContainer(ctx context.Context, cli *client.Client) error {
 	if err := cli.ContainerRemove(ctx, config.ContainerID(), types.ContainerRemoveOptions{}); err != nil {
 		return err
@@ -127,6 +131,7 @@ func copyToContainer(ctx context.Context, cli *client.Client, dstPath, filename 
 	return nil
 }
 
+// AttachContainer attaches lambda container
 func AttachContainer(ctx context.Context, cli *client.Client) error {
 	hj, err := cli.ContainerAttach(ctx, config.ContainerID(), types.ContainerAttachOptions{
 		Stream: true,
