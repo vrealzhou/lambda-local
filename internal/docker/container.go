@@ -57,6 +57,9 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 		"AWS_REGION=" + config.AWSRegion(),
 		"DEBUG=" + viper.GetString("debug"),
 	}
+	if config.EnvFile() != "" {
+		env = append(env, "ENV_JSON=true")
+	}
 	funcEnv := make(map[string]string)
 	for _, f := range functions {
 		for key := range f.Properties.Environment.Variables {
@@ -95,6 +98,12 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	}
 	for _, f := range functions {
 		if err := copyToContainer(ctx, cli, "/var/lambdas/", f.Properties.CodeURI); err != nil {
+			return err
+		}
+	}
+	if config.EnvFile() != "" {
+		err = copyToContainer(ctx, cli, "/var/lambdas/env.json", config.EnvFile())
+		if err != nil {
 			return err
 		}
 	}

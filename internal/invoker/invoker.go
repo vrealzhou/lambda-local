@@ -68,19 +68,7 @@ func PrepareFunction(name string, function template.Function) error {
 		return err
 	}
 	// find available port between 2000-3000
-	for port := 2000; port < 3000; port++ {
-		found := false
-		for _, m := range Functions {
-			if m.Port == port {
-				found = true
-				break
-			}
-		}
-		if !found {
-			meta.Port = port
-			break
-		}
-	}
+	meta.Port = pickPort()
 	command := filepath.Join(config.LambdaBase(), name, function.Properties.Handler)
 	envs := generateEnvs(name, function, meta)
 	log.Debugf("Command: %s, envs: %v\n", command, envs)
@@ -122,8 +110,7 @@ func generateEnvs(name string, function template.Function, meta *FunctionMeta) [
 	envs := make([]string, 0)
 	extraEnvs := envSettings[name]
 	for key, val := range function.Properties.Environment.Variables {
-		if extraVal, ok := extraEnvs[key]; ok {
-			envs = append(envs, key+"="+extraVal)
+		if _, ok := extraEnvs[key]; ok {
 			continue
 		} else if os.Getenv(key) != "" {
 			continue
@@ -140,6 +127,9 @@ func generateEnvs(name string, function template.Function, meta *FunctionMeta) [
 		if _, ok := extraEnvs[key]; ok {
 			continue
 		}
+		envs = append(envs, key+"="+val)
+	}
+	for key, val := range extraEnvs {
 		envs = append(envs, key+"="+val)
 	}
 	envs = append(envs, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
@@ -312,6 +302,23 @@ func unzip(src string, target string) error {
 		}
 	}
 	return nil
+}
+
+func pickPort() int {
+	// find available port between 2000-3000
+	for port := 2000; port < 3000; port++ {
+		found := false
+		for _, m := range Functions {
+			if m.Port == port {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return port
+		}
+	}
+	return 0
 }
 
 // LoadEnvFile loads extra env json file

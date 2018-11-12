@@ -126,6 +126,7 @@ func parseArgs() {
 
 	if os.Getenv("ENV_JSON") == "true" {
 		viper.SetDefault("env", "/var/lambdas/env.json")
+		os.Unsetenv("ENV_JSON")
 	}
 
 	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
