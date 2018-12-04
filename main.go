@@ -116,9 +116,9 @@ func parseArgs() {
 	rootCmd.PersistentFlags().StringVarP(&network, "docker-network", "n", "bridge", "Docker network mode")
 	viper.BindPFlag("networkMode", rootCmd.PersistentFlags().Lookup("docker-network"))
 
-	var env string
-	rootCmd.PersistentFlags().StringVarP(&env, "env", "e", "", "Env json file")
-	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+	var envjson string
+	rootCmd.PersistentFlags().StringVarP(&envjson, "env-json", "", "", "Env json file")
+	viper.BindPFlag("env-json", rootCmd.PersistentFlags().Lookup("env-json"))
 
 	var awsRegion string
 	rootCmd.PersistentFlags().StringVarP(&awsRegion, "aws-region", "r", "", "AWS region")

@@ -17,7 +17,7 @@ func Template() string {
 
 // EnvFile returns env file name
 func EnvFile() string {
-	return viper.GetString("env")
+	return viper.GetString("env-json")
 }
 
 // Profile returns AWS credentials profile name
