@@ -43,34 +43,34 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	if err != nil {
 		return err
 	}
-	creds := credentials.NewSharedCredentials(filepath.Join(usr.HomeDir, ".aws", "credentials"), config.Profile())
-	value, err := creds.Get()
-	if err != nil {
-		return err
-	}
-	env := []string{
-		"PORT=" + innerPort,
-		"AWS_ACCESS_KEY_ID=" + value.AccessKeyID,
-		"AWS_SECRET_ACCESS_KEY=" + value.SecretAccessKey,
-		"AWS_SESSION_TOKEN=" + value.SessionToken,
-		"AWS_DEFAULT_REGION=" + config.AWSRegion(),
-		"AWS_REGION=" + config.AWSRegion(),
-		"DEBUG=" + viper.GetString("debug"),
-	}
-	if config.EnvFile() != "" {
-		env = append(env, "ENV_JSON=true")
-	}
-	funcEnv := make(map[string]string)
-	for _, f := range functions {
-		for key := range f.Properties.Environment.Variables {
-			if ev := os.Getenv(key); ev != "" {
-				funcEnv[key] = ev
-			}
+
+	envMap := make(map[string]string)
+	credFile := filepath.Join(usr.HomeDir, ".aws", "credentials")
+	if _, err := os.Stat(credFile); !os.IsNotExist(err) {
+		creds := credentials.NewSharedCredentials(credFile, config.Profile())
+		value, err := creds.Get()
+		if err != nil {
+			return err
+		}
+		envMap["AWS_ACCESS_KEY_ID"] = value.AccessKeyID
+		envMap["AWS_SECRET_ACCESS_KEY"] = value.SecretAccessKey
+		if value.SessionToken != "" {
+			envMap["AWS_SESSION_TOKEN"] = value.SessionToken
 		}
 	}
-	for key, val := range funcEnv {
-		env = append(env, key+"="+val)
+	if config.EnvFile() != "" {
+		envMap["ENV_JSON"] = "true"
 	}
+	envMap["PORT"] = innerPort
+	envMap["AWS_DEFAULT_REGION"] = config.AWSRegion()
+	envMap["AWS_REGION"] = config.AWSRegion()
+	envMap["DEBUG"] = viper.GetString("debug")
+
+	env := make([]string, 0)
+	for k, v := range envMap {
+		env = append(env, k+"="+v)
+	}
+	
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		AttachStdout: true,
 		AttachStderr: true,

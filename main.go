@@ -131,6 +131,9 @@ func parseArgs() {
 	var debug bool
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Turn on/off debug")
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+
+	rootCmd.PersistentFlags().StringSliceP("env", "e", []string{}, "env settings")
+	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
 }
 
 func listenSignal(ctx context.Context, cli *client.Client) {

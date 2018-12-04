@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/docker/docker/api/types/container"
 	"github.com/spf13/viper"
 )
@@ -18,6 +20,17 @@ func Template() string {
 // EnvFile returns env file name
 func EnvFile() string {
 	return viper.GetString("env-json")
+}
+
+// Env returns env file name
+func Env() map[string]string {
+	envAry := viper.Get("env").([]string)
+	envMap := make(map[string]string)
+	for _, item := range envAry {
+		index := strings.Index(item, "=")
+		envMap[item[:index]] = item[index+1:]
+	}
+	return envMap
 }
 
 // Profile returns AWS credentials profile name
