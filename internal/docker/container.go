@@ -65,12 +65,15 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	envMap["AWS_DEFAULT_REGION"] = config.AWSRegion()
 	envMap["AWS_REGION"] = config.AWSRegion()
 	envMap["DEBUG"] = viper.GetString("debug")
+	for k, v := range config.Env() {
+		envMap[k] = v
+	}
 
 	env := make([]string, 0)
 	for k, v := range envMap {
 		env = append(env, k+"="+v)
 	}
-	
+
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		AttachStdout: true,
 		AttachStderr: true,

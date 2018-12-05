@@ -107,15 +107,11 @@ func PrepareFunction(name string, function template.Function) error {
 }
 
 func generateEnvs(name string, function template.Function, meta *FunctionMeta) []string {
+	envMap := make(map[string]string)
 	envs := make([]string, 0)
 	extraEnvs := envSettings[name]
 	for key, val := range function.Properties.Environment.Variables {
-		if _, ok := extraEnvs[key]; ok {
-			continue
-		} else if os.Getenv(key) != "" {
-			continue
-		}
-		envs = append(envs, key+"="+val)
+		envMap[key] = val
 	}
 	for _, env := range os.Environ() {
 		index := strings.Index(env, "=")
@@ -124,13 +120,13 @@ func generateEnvs(name string, function template.Function, meta *FunctionMeta) [
 		}
 		key := env[:index]
 		val := env[index+1:]
-		if _, ok := extraEnvs[key]; ok {
-			continue
-		}
-		envs = append(envs, key+"="+val)
+		envMap[key] = val
 	}
 	for key, val := range extraEnvs {
-		envs = append(envs, key+"="+val)
+		envMap[key] = val
+	}
+	for k, v := range envMap {
+		envs = append(envs, k+"="+v)
 	}
 	envs = append(envs, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
 	return envs
