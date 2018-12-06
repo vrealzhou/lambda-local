@@ -135,7 +135,7 @@ func DeleteContainer(ctx context.Context, cli *client.Client) error {
 
 func copyToContainer(ctx context.Context, cli *client.Client, dstPath, filename string) error {
 	args := []string{"cp", filename, config.ContainerID() + ":" + dstPath}
-	log.Debugf("Command: docker %s\n", args)
+	log.Infof("Command: docker %s\n", args)
 	cmd := exec.Command("docker", args...)
 	if err := cmd.Run(); err != nil {
 		return err
@@ -144,7 +144,7 @@ func copyToContainer(ctx context.Context, cli *client.Client, dstPath, filename 
 }
 
 // AttachContainer attaches lambda container
-func AttachContainer(ctx context.Context, cli *client.Client) error {
+func AttachContainer(ctx context.Context, cli *client.Client, writer io.Writer) error {
 	hj, err := cli.ContainerAttach(ctx, config.ContainerID(), types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
@@ -164,6 +164,6 @@ func AttachContainer(ctx context.Context, cli *client.Client) error {
 			}
 			return err
 		}
-		os.Stdout.Write(buf[:n])
+		writer.Write(buf[:n])
 	}
 }

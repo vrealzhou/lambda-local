@@ -68,8 +68,28 @@ var startLambdaCmd = &cobra.Command{
 			docker.DeleteContainer(ctx, cli)
 			panic(err)
 		}
-		listenSignal(ctx, cli)
-		docker.AttachContainer(ctx, cli)
+		output := config.Output()
+		switch output {
+		case "":
+			return
+		case "STDOUT":
+			listenSignal(func() {
+				docker.StopContainer(ctx, cli)
+			})
+			docker.AttachContainer(ctx, cli, os.Stdout)
+		default:
+			fmt.Printf("Export log to: %s\n", output)
+			f, err := os.Create(output)
+			if err != nil {
+				docker.DeleteContainer(ctx, cli)
+				panic(err)
+			}
+			listenSignal(func() {
+				f.Close()
+				docker.StopContainer(ctx, cli)
+			})
+			docker.AttachContainer(ctx, cli, f)
+		}
 	},
 }
 
@@ -134,13 +154,17 @@ func parseArgs() {
 
 	rootCmd.PersistentFlags().StringSliceP("env", "e", []string{}, "env settings")
 	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+
+	rootCmd.PersistentFlags().StringP("output", "o", "", `output targets: STDOUT, filename. 
+	It will stop command line and let container keep running if empty`)
+	viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
 }
 
-func listenSignal(ctx context.Context, cli *client.Client) {
+func listenSignal(f func()) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func(ctx context.Context, cli *client.Client) {
+	go func(f func()) {
 		<-sigs
-		docker.StopContainer(ctx, cli)
-	}(ctx, cli)
+		f()
+	}(f)
 }

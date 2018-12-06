@@ -7,19 +7,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Port returns service port
-func Port() int {
-	return viper.GetInt("port")
+// AWSRegion returns AWS Region
+func AWSRegion() string {
+	return viper.GetString("aws_region")
 }
 
-// Template returns template file name
-func Template() string {
-	return viper.GetString("template")
-}
-
-// EnvFile returns env file name
-func EnvFile() string {
-	return viper.GetString("env-json")
+// ContainerID returns containerID
+func ContainerID() string {
+	return viper.GetString("containerID")
 }
 
 // Env returns env file name
@@ -33,19 +28,9 @@ func Env() map[string]string {
 	return envMap
 }
 
-// Profile returns AWS credentials profile name
-func Profile() string {
-	return viper.GetString("profile")
-}
-
-// Payload returns payload file name
-func Payload() string {
-	return viper.GetString("payload")
-}
-
-// SetPayload sets payload file name to global setting
-func SetPayload(payload string) {
-	viper.Set("payload", payload)
+// EnvFile returns env file name
+func EnvFile() string {
+	return viper.GetString("env-json")
 }
 
 // NetworkMode returns docker network mode
@@ -53,17 +38,37 @@ func NetworkMode() container.NetworkMode {
 	return container.NetworkMode(viper.GetString("networkMode"))
 }
 
-// AWSRegion returns AWS Region
-func AWSRegion() string {
-	return viper.GetString("aws_region")
+// Output returns output direction: STDOUT or filename
+func Output() string {
+	return viper.GetString("output")
 }
 
-// ContainerID returns containerID
-func ContainerID() string {
-	return viper.GetString("containerID")
+// Payload returns payload file name
+func Payload() string {
+	return viper.GetString("payload")
+}
+
+// Port returns service port
+func Port() int {
+	return viper.GetInt("port")
+}
+
+// Profile returns AWS credentials profile name
+func Profile() string {
+	return viper.GetString("profile")
+}
+
+// Template returns template file name
+func Template() string {
+	return viper.GetString("template")
 }
 
 // SetContainerID set containerID into global setting
 func SetContainerID(id string) {
 	viper.Set("containerID", id)
+}
+
+// SetPayload sets payload file name to global setting
+func SetPayload(payload string) {
+	viper.Set("payload", payload)
 }
