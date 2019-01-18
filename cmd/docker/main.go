@@ -117,7 +117,7 @@ func parseArgs() {
 	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
 
 	var template string
-	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "/var/lambdas/ingestor-sam.yaml", "SAM template file")
+	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "/var/lambdas/template.yaml", "SAM template file")
 	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
 
 	var lambdaBase string

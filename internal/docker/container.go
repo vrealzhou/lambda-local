@@ -96,7 +96,7 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	}
 	fmt.Println("containerID:", resp.ID)
 	config.SetContainerID(resp.ID)
-	if err := copyToContainer(ctx, cli, "/var/lambdas/", config.Template()); err != nil {
+	if err := copyToContainer(ctx, cli, "/var/lambdas/template.yaml", config.Template()); err != nil {
 		return err
 	}
 	for _, f := range functions {
