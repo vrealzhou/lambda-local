@@ -40,7 +40,7 @@ var invokeCmd = &cobra.Command{
 			fmt.Printf("requires at least one arg\n")
 			return
 		}
-		fmt.Printf("Execute function %s in template %s with reload: %t\n", args[0], viper.GetString("template"), viper.GetBool("reload"))
+		fmt.Printf("Execute function %s in template %s with reload: %t\n", args[0], config.Template(), config.Reload())
 	},
 }
 

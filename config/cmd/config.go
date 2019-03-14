@@ -19,7 +19,7 @@ func ContainerID() string {
 
 // Env returns env file name
 func Env() map[string]string {
-	envAry := viper.Get("env").([]string)
+	envAry := viper.GetStringSlice("env")
 	envMap := make(map[string]string)
 	for _, item := range envAry {
 		index := strings.Index(item, "=")
@@ -71,4 +71,9 @@ func SetContainerID(id string) {
 // SetPayload sets payload file name to global setting
 func SetPayload(payload string) {
 	viper.Set("payload", payload)
+}
+
+// Reload returns true or false of reload
+func Reload() bool {
+	return viper.GetBool("reload")
 }
