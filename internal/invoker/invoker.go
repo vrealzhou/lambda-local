@@ -120,10 +120,20 @@ func generateEnvs(name string, function template.Function, meta *FunctionMeta) [
 		}
 		key := env[:index]
 		val := env[index+1:]
-		envMap[key] = val
+		if strings.HasPrefix(key, "AWS_") {
+			envMap[key] = val
+		}
+		if _, ok := envMap[key]; ok {
+			envMap[key] = val
+		}
 	}
 	for key, val := range extraEnvs {
-		envMap[key] = val
+		if strings.HasPrefix(key, "AWS_") {
+			envMap[key] = val
+		}
+		if _, ok := envMap[key]; ok {
+			envMap[key] = val
+		}
 	}
 	for k, v := range envMap {
 		envs = append(envs, k+"="+v)
