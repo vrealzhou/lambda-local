@@ -18,8 +18,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/vrealzhou/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
-	"github.com/vrealzhou/lambda-local/internal/template"
 )
 
 // Functions holds all functions' meta data
@@ -43,17 +43,17 @@ type FunctionMeta struct {
 }
 
 // PrepareFunction preload function and make it ready to invoke
-func PrepareFunction(name string, function template.Function) error {
+func PrepareFunction(name string, function *resources.AWSServerlessFunction) error {
 	if _, ok := Functions[name]; ok {
 		return nil
 	}
 	meta := &FunctionMeta{
 		Name:       name,
 		Arn:        name,
-		TimeoutSec: int64(function.Properties.Timeout),
+		TimeoutSec: int64(function.Timeout),
 	}
 	// locate exec file
-	splits := strings.Split(function.Properties.CodeURI, "/")
+	splits := strings.Split(*function.CodeUri.String, "/")
 	zipFile := filepath.Join(config.LambdaBase(), splits[len(splits)-1])
 	target := filepath.Join(config.LambdaBase(), name)
 	log.Debugf("lambda zip file: %s, lambda exec path: %s\n", zipFile, target)
@@ -69,7 +69,7 @@ func PrepareFunction(name string, function template.Function) error {
 	}
 	// find available port between 2000-3000
 	meta.Port = pickPort()
-	command := filepath.Join(config.LambdaBase(), name, function.Properties.Handler)
+	command := filepath.Join(config.LambdaBase(), name, function.Handler)
 	envs := generateEnvs(name, function, meta)
 	log.Debugf("Command: %s, envs: %v\n", command, envs)
 	cmd := exec.Command(command)
@@ -106,11 +106,11 @@ func PrepareFunction(name string, function template.Function) error {
 	return nil
 }
 
-func generateEnvs(name string, function template.Function, meta *FunctionMeta) []string {
+func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *FunctionMeta) []string {
 	envMap := make(map[string]string)
 	envs := make([]string, 0)
 	extraEnvs := envSettings[name]
-	for key, val := range function.Properties.Environment.Variables {
+	for key, val := range function.Environment.Variables {
 		envMap[key] = val
 	}
 	for _, env := range os.Environ() {

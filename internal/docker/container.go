@@ -19,8 +19,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 
+	"github.com/vrealzhou/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/cmd"
-	"github.com/vrealzhou/lambda-local/internal/template"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 )
 
 // StartLambdaContainer starts lambda container
-func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map[string]template.Function) error {
+func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map[string]*resources.AWSServerlessFunction, parameters map[string]string) error {
 	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 	if err != nil {
 		return err
@@ -74,13 +74,20 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 		env = append(env, k+"="+v)
 	}
 
+	cmd := []string{"/var/lambdas/main"}
+
+	for k, v := range parameters {
+		cmd = append(cmd, "-p")
+		cmd = append(cmd, `"`+k+`=`+v+`"`)
+	}
+
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		AttachStdout: true,
 		AttachStderr: true,
 		Image:        imageName,
 		ExposedPorts: nat.PortSet{p: {}},
 		Env:          env,
-		Cmd:          strslice.StrSlice{"/var/lambdas/main"},
+		Cmd:          strslice.StrSlice(cmd),
 	}, &container.HostConfig{
 		NetworkMode: config.NetworkMode(),
 		PortBindings: nat.PortMap{p: []nat.PortBinding{
@@ -96,11 +103,11 @@ func StartLambdaContainer(ctx context.Context, cli *client.Client, functions map
 	}
 	fmt.Println("containerID:", resp.ID)
 	config.SetContainerID(resp.ID)
-	if err := copyToContainer(ctx, cli, "/var/lambdas/template.yaml", config.Template()); err != nil {
+	if err := copyToContainer(ctx, cli, "/var/templates/template.yaml", config.Template()); err != nil {
 		return err
 	}
 	for _, f := range functions {
-		if err := copyToContainer(ctx, cli, "/var/lambdas/", f.Properties.CodeURI); err != nil {
+		if err := copyToContainer(ctx, cli, "/var/lambdas/", *f.CodeUri.String); err != nil {
 			return err
 		}
 	}

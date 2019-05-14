@@ -6,19 +6,17 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/vrealzhou/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"
-	"gopkg.in/yaml.v2"
 )
 
-var functions map[string]template.Function
+var functions map[string]*resources.AWSServerlessFunction
 
 var rootCmd = &cobra.Command{
 	Use:   "run",
@@ -32,18 +30,18 @@ var rootCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}
-		tmpl, err := parseTemplate(config.Template())
+		var err error
+		functions, err = parseTemplate(config.Template())
 		if err != nil {
 			log.Fatal(err)
 		}
-		functions = tmpl.Functions()
 		defer clearUp()
 		serve()
 	},
 }
 
 func main() {
-	parseArgs()
+	config.ParseArgs(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -93,45 +91,9 @@ func clearUp() {
 	}
 }
 
-func parseTemplate(tmplFile string) (t template.SAMTemplate, err error) {
+func parseTemplate(tmplFile string) (map[string]*resources.AWSServerlessFunction, error) {
 	if tmplFile == "" {
-		return t, fmt.Errorf("Please specify template file via --template {filename}")
+		return nil, fmt.Errorf("Please specify template file via --template {filename}")
 	}
-	f, err := os.Open(tmplFile)
-	if err != nil {
-		return t, fmt.Errorf("Error when open template file %s: %s", tmplFile, err.Error())
-	}
-	defer f.Close()
-	d := yaml.NewDecoder(f)
-	d.SetStrict(false)
-	err = d.Decode(&t)
-	if err != nil {
-		return t, fmt.Errorf("Error when decoding template file %s: %s", tmplFile, err.Error())
-	}
-	return t, nil
-}
-
-func parseArgs() {
-	var port int
-	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 3001, "Service port")
-	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
-
-	var template string
-	rootCmd.PersistentFlags().StringVarP(&template, "template", "t", "/var/lambdas/template.yaml", "SAM template file")
-	viper.BindPFlag("template", rootCmd.PersistentFlags().Lookup("template"))
-
-	var lambdaBase string
-	rootCmd.PersistentFlags().StringVarP(&lambdaBase, "base", "b", "/var/lambdas", "Lambda base dir")
-	viper.BindPFlag("lambdaBase", rootCmd.PersistentFlags().Lookup("base"))
-
-	if os.Getenv("ENV_JSON") == "true" {
-		viper.SetDefault("env", "/var/lambdas/env.json")
-		os.Unsetenv("ENV_JSON")
-	}
-
-	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	}
-	log.SetFormatter(&log.TextFormatter{})
+	return template.Parse(tmplFile, nil)
 }
