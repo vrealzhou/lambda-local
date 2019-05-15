@@ -3,7 +3,7 @@ This is a tool to run AWS Lambda locally and keep warm. The original perpose is 
 
 **NOTE:** 
 * This program is only for test if Lambda function logic correct without deploy. It doesn't provide full feature of cloud version Lambdas.
-* It has very limited feature which only match my work requirement. Anyone intested in it can make a fork and add yourself.
+* It has limited features which only match my work requirement. Anyone intested in it can make a fork and add yourself.
 
 ## Requitements
 * go 1.12 or above for build your own image
