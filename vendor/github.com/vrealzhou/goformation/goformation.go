@@ -2,7 +2,6 @@ package goformation
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -49,8 +48,6 @@ func ParseYAMLWithOptions(data []byte, options *intrinsics.ProcessorOptions) (*c
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(intrinsified))
 
 	return unmarshal(intrinsified)
 

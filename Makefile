@@ -9,9 +9,6 @@ build-lambda:
 	$(call build_lambda,Hello,hello)
 	$(call build_lambda,Cheers,cheers)
 
-build-linux:
-	$(GOBUILD) -o build/lambda-local main.go
-
 build-docker:
 	$(GOBUILD) -o build/docker/main cmd/docker/main.go
 	docker rmi vreal/lambda-local-go || exit 0

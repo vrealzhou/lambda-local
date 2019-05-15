@@ -31,4 +31,26 @@
 
 [[constraint]]
   name = "github.com/vrealzhou/goformation"
-  version = "2.3.2"
+  version = "v2.3.2"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "v0.0.3"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "v1.3.2"
+
+
+[[constraint]]
+  name = "github.com/labstack/echo"
+  version = "v4.1.5"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "v1.4.1"
+
+[[constraint]]
+  name = "github.com/aws/aws-lambda-go"
+  version = "v1.10.0"
+  

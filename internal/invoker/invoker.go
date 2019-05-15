@@ -109,7 +109,6 @@ func PrepareFunction(name string, function *resources.AWSServerlessFunction) err
 func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *FunctionMeta) []string {
 	envMap := make(map[string]string)
 	envs := make([]string, 0)
-	extraEnvs := envSettings[name]
 	for key, val := range function.Environment.Variables {
 		envMap[key] = val
 	}
@@ -127,12 +126,14 @@ func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *
 			envMap[key] = val
 		}
 	}
-	for key, val := range extraEnvs {
-		if strings.HasPrefix(key, "AWS_") {
-			envMap[key] = val
-		}
-		if _, ok := envMap[key]; ok {
-			envMap[key] = val
+	if extraEnvs, ok := envSettings[name]; ok {
+		for key, val := range extraEnvs {
+			if strings.HasPrefix(key, "AWS_") {
+				envMap[key] = val
+			}
+			if _, ok := envMap[key]; ok {
+				envMap[key] = val
+			}
 		}
 	}
 	for k, v := range envMap {
@@ -329,6 +330,9 @@ func pickPort() int {
 
 // LoadEnvFile loads extra env json file
 func LoadEnvFile(file string) error {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return nil
+	}
 	f, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("Error on opening env file %s: %s", file, err.Error())
