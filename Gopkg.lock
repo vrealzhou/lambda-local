@@ -15,7 +15,7 @@
   version = "v1.10.0"
 
 [[projects]]
-  digest = "1:defaef01658b3ba672a3cd8b4c7d8b6c62ed980e65fd934ab59598a059c2dbe8"
+  digest = "1:3e7e56d23265da7d9e6842c96a9fc2d204b762ee470084b4637820180e32b328"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -53,8 +53,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "49378c3c0300fe39e80f4e4794a8b62daae83139"
-  version = "v1.19.29"
+  revision = "52cd98f1ed1857be47c069f1b27a5dbebb0c1995"
+  version = "v1.19.30"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -182,12 +182,12 @@
   revision = "ed9d249f429b3f5a69f80a7abef6bfce81fef894"
 
 [[projects]]
-  digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
+  branch = "master"
+  digest = "1:87bba851c9d309b82e7c7c719bf4ffe9f88f82c13f403a603eeecbbe588f6ed5"
   name = "github.com/sanathkr/yaml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-  version = "v1.0.0"
+  revision = "0056894fa522748ca336761ffeeeb6bbae654d07"
 
 [[projects]]
   digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
@@ -303,7 +303,7 @@
   name = "golang.org/x/net"
   packages = ["idna"]
   pruneopts = "UT"
-  revision = "a4d6f7feada510cc50e69a37b484cb0fdc6b7876"
+  revision = "3ec19112720433827bbce8be9342797f5a6aaaf9"
 
 [[projects]]
   branch = "master"
@@ -311,7 +311,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "a5b02f93d862f065920dd6a40dddc66b60d0dec4"
+  revision = "3a4b5fb9f71f5874b2374ae059bc0e0bcb52e145"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

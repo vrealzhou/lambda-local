@@ -53,3 +53,7 @@
 [[constraint]]
   name = "github.com/aws/aws-lambda-go"
   version = "v1.10.0"
+
+[[override]]
+  name = "github.com/sanathkr/yaml"
+  branch = "master"
