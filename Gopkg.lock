@@ -273,6 +273,7 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
   digest = "1:7c91bd2086fe6c96743402cb974497315f7bbaed593fa7bab3a344a6b0469da3"
   name = "github.com/vrealzhou/goformation"
   packages = [
@@ -284,7 +285,6 @@
   ]
   pruneopts = "UT"
   revision = "fe7827cc4bf8b116253fce18369fe68ac167e428"
-  version = "v2.3.2"
 
 [[projects]]
   branch = "master"

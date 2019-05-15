@@ -31,7 +31,7 @@
 
 [[constraint]]
   name = "github.com/vrealzhou/goformation"
-  version = "v2.3.2"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
@@ -53,4 +53,3 @@
 [[constraint]]
   name = "github.com/aws/aws-lambda-go"
   version = "v1.10.0"
-  
