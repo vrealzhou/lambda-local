@@ -6,7 +6,7 @@ This is a tool to run AWS Lambda locally and keep warm. The original perpose is 
 * It has very limited feature which only match my work requirement. Anyone intested in it can make a fork and add yourself.
 
 ## Requitements
-* go 1.12 or above
+* go 1.12 or above for build your own image
 * docker v2.0.0.0 or above
 * You need to setup valid credentials in ~/.aws/credentials file.
 
