@@ -18,7 +18,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vrealzhou/goformation/cloudformation/resources"
+	"github.com/awslabs/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 )
 
@@ -73,6 +73,7 @@ func PrepareFunction(name string, function *resources.AWSServerlessFunction) err
 	envs := generateEnvs(name, function, meta)
 	log.Debugf("Command: %s, envs: %v\n", command, envs)
 	cmd := exec.Command(command)
+	cmd.Dir = filepath.Join(config.LambdaBase(), name)
 	cmd.Env = envs
 	stdoutIn, err := cmd.StdoutPipe()
 	if err != nil {

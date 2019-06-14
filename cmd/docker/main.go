@@ -7,10 +7,10 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/awslabs/goformation/cloudformation/resources"
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/vrealzhou/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 	"github.com/vrealzhou/lambda-local/internal/invoker"
 	"github.com/vrealzhou/lambda-local/internal/template"

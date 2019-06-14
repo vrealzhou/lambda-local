@@ -5,10 +5,10 @@ go 1.12
 require (
 	github.com/aws/aws-lambda-go v1.10.0
 	github.com/aws/aws-sdk-go v1.19.30
+	github.com/awslabs/goformation v2.3.1+incompatible
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/kr/pty v1.1.4 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
@@ -24,13 +24,14 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.3.2
-	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/valyala/fasttemplate v1.0.1 // indirect
-	github.com/vrealzhou/goformation v0.0.0-20190515064812-6a4e1fb76250
 	github.com/xeipuuv/gojsonschema v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
 	golang.org/x/net v0.0.0-20190514140710-3ec191127204 // indirect
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/sys v0.0.0-20190514135907-3a4b5fb9f71f // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190515035509-2196cb7019cc // indirect
 )
+
+replace github.com/awslabs/goformation => github.com/vrealzhou/goformation v2.3.1+incompatible
