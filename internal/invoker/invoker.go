@@ -15,10 +15,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda/messages"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/awslabs/goformation/cloudformation/resources"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/awslabs/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 )
 
@@ -137,11 +138,33 @@ func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *
 			}
 		}
 	}
+	// set AWS credentials from file if not set
+	if !hasCredentials(envMap) {
+		provider := &credentials.SharedCredentialsProvider{
+			Profile: os.Getenv("AWS_DEFAULT_PROFILE"),
+		}
+		value, err := provider.Retrieve()
+		if err != nil {
+			log.Println("Error on retrive credentials: %s", err.Error())
+		}
+		envMap["AWS_ACCESS_KEY_ID"] = value.AccessKeyID
+		envMap["AWS_SECRET_ACCESS_KEY"] = value.SecretAccessKey
+		if value.SessionToken != "" {
+			envMap["AWS_SESSION_TOKEN"] = value.SessionToken
+		}
+	}
 	for k, v := range envMap {
 		envs = append(envs, k+"="+v)
 	}
 	envs = append(envs, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
 	return envs
+}
+
+func hasCredentials(envMap map[string]string) bool {
+	if _, ok := envMap["AWS_AWS_ACCESS_KEY_ID"]; ok {
+		return true
+	}
+	return false
 }
 
 func copyAndCapture(w io.Writer, r io.Reader) {
