@@ -26,7 +26,7 @@ It's a web service running in docker container. You can run a shell script to se
     ```
 2. Create a container from this image. The command is just an example, You can create your own version. The `/var/lambdas/main` can take multiple `-p` options to override the yaml template parameters. `HostEnv` and `CacheHost` are just example which may not necessary in your own projects. `-e AWS_DEFAULT_PROFILE=default` is necessary if you are not using default AWS credentials profile.
     ```
-    docker create -v ~/.aws:/.aws --rm -p $PORT:3001/tcp --name $CONTAINER_NAME --network $NETWORK \
+    docker create -v ~/.aws:/root/.aws --rm -p $PORT:3001/tcp --name $CONTAINER_NAME --network $NETWORK \
     -e AWS_DEFAULT_PROFILE=default -e OTHER_ENV_VARIABLE=$other_variable \
     vreal/lambda-local-go:latest \
     /var/lambdas/main -p HostEnv=$HOST_ENV -p CacheHost=$CACHE_HOST
