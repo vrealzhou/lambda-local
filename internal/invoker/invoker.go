@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda/messages"
@@ -41,6 +42,7 @@ type FunctionMeta struct {
 	Port       int
 	TimeoutSec int64
 	Pid        int
+	Mutex      *sync.Mutex
 }
 
 // PrepareFunction preload function and make it ready to invoke
@@ -52,6 +54,7 @@ func PrepareFunction(name string, function *resources.AWSServerlessFunction) err
 		Name:       name,
 		Arn:        name,
 		TimeoutSec: int64(function.Timeout),
+		Mutex:      &sync.Mutex{},
 	}
 	// locate exec file
 	splits := strings.Split(*function.CodeUri.String, "/")
@@ -221,6 +224,8 @@ func pingFunc(meta *FunctionMeta) error {
 
 // InvokeFunc do the invoke operation to specified Lambda function
 func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
+	meta.Mutex.Lock()
+	defer meta.Mutex.Unlock()
 	start := time.Now()
 	log.Debugf("Invoke Function %s with Payload: %s", meta.Name, string(payload))
 	log.Infof("Start Invoke Function %s at: %s\n", meta.Name, start.Format("2006/01/02 15:04:05"))
