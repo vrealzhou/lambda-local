@@ -60,7 +60,10 @@ func invoke(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error on prepar function Test: %s", err.Error())
 	}
-	meta := invoker.Functions[name]
+	meta, ok := invoker.Functions[name]
+	if !ok {
+		return fmt.Errorf("Unregistered function name: %s", name)
+	}
 	payload, err := ioutil.ReadAll(c.Request().Body)
 	defer c.Request().Body.Close()
 	if err != nil {
