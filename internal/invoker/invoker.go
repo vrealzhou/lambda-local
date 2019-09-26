@@ -18,7 +18,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vrealzhou/goformation/cloudformation/resources"
+	"github.com/awslabs/goformation/cloudformation/resources"
 	config "github.com/vrealzhou/lambda-local/config/docker"
 )
 

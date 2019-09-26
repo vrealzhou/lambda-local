@@ -1,9 +1,9 @@
 package template
 
 import (
-	"github.com/vrealzhou/goformation"
-	"github.com/vrealzhou/goformation/cloudformation/resources"
-	"github.com/vrealzhou/goformation/intrinsics"
+	"github.com/awslabs/goformation"
+	"github.com/awslabs/goformation/cloudformation/resources"
+	"github.com/awslabs/goformation/intrinsics"
 )
 
 func Parse(file string, parameters map[string]string) (map[string]*resources.AWSServerlessFunction, error) {
