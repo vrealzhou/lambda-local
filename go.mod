@@ -34,4 +34,4 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 )
 
-replace github.com/awslabs/goformation => github.com/vrealzhou/goformation v0.0.0-20190513073459-e473c75aab53
+replace github.com/awslabs/goformation => github.com/vrealzhou/goformation v2.3.1+incompatible

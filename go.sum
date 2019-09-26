@@ -96,8 +96,8 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.0.1 h1:tY9CJiPnMXf1ERmG2EyK7gNUd+c6RKGD0IfU8WdUSz8=
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=
-github.com/vrealzhou/goformation v0.0.0-20190513073459-e473c75aab53 h1:m5akAdNGsYlJHnTw2w6+bgwyeTgGUYG63TzBfGLGP3k=
-github.com/vrealzhou/goformation v0.0.0-20190513073459-e473c75aab53/go.mod h1:HezUyH08DSwwGn3GioVXWZYUhkdvC+oGJ7ya7vBRm7k=
+github.com/vrealzhou/goformation v2.3.1+incompatible h1:iGzqCGbui+vM7XbVm0F7qXINx+A/u0u4EACmdSSnUPU=
+github.com/vrealzhou/goformation v2.3.1+incompatible/go.mod h1:HezUyH08DSwwGn3GioVXWZYUhkdvC+oGJ7ya7vBRm7k=
 github.com/xeipuuv/gojsonpointer v0.0.0-20170225233418-6fe8760cad35 h1:0TnXeVP6mx+A4CBf8cQVkQfkhyGBQCmJcT4g6zKzm7M=
 github.com/xeipuuv/gojsonpointer v0.0.0-20170225233418-6fe8760cad35/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20150808065054-e02fc20de94c h1:XZWnr3bsDQWAZg4Ne+cPoXRPILrNlPNQfxBuwLl43is=
