@@ -1,4 +1,4 @@
-FROM amazonlinux:2018.03
+FROM amazonlinux:latest
 EXPOSE 3001
 
 COPY main /var/lambdas/

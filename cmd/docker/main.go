@@ -60,7 +60,7 @@ func invoke(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error on prepar function Test: %s", err.Error())
 	}
-	meta, ok := invoker.Functions[name]
+	h, ok := invoker.Functions[name]
 	if !ok {
 		return fmt.Errorf("Unregistered function name: %s", name)
 	}
@@ -69,7 +69,7 @@ func invoke(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	result, err := invoker.InvokeFunc(meta, payload)
+	result, err := h.Invoke(payload)
 	if err != nil {
 		if result != nil {
 			c.Response().Header().Set("X-Amz-Executed-Version", "$LATEST")
@@ -85,12 +85,11 @@ func invoke(c echo.Context) error {
 
 func clearUp() {
 	for name, f := range invoker.Functions {
-		log.Debugf("Stop function %s, process id: %d", name, f.Pid)
-		proc, err := os.FindProcess(f.Pid)
+		log.Debugf("Stop function %s", name)
+		err := f.Stop()
 		if err != nil {
-			log.Errorf("Error on find process: %d", f.Pid)
+			log.Errorf("Error on stop function: %s", name)
 		}
-		proc.Kill()
 	}
 }
 

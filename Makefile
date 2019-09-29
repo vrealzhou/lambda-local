@@ -9,14 +9,20 @@ build-lambda:
 	$(call build_lambda,Hello,hello)
 	$(call build_lambda,Cheers,cheers)
 
-build-docker:
+compile:
 	$(GOBUILD) -o build/docker/main cmd/docker/main.go
+
+pack:
 	docker rmi vreal/lambda-local-go || exit 0
 	docker build -t vreal/lambda-local-go:latest build/docker/
+
+push:
 	docker push vreal/lambda-local-go:latest
 	docker tag vreal/lambda-local-go:latest $(DOCKER_VER)
 	docker push $(DOCKER_VER)
 	docker rmi $(DOCKER_VER)
+
+clean:
 	rm -rf build/docker/main
 
 define build_lambda
