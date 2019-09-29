@@ -6,26 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/rpc"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/aws/aws-lambda-go/lambda/messages"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/awslabs/goformation/cloudformation/resources"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	config "github.com/vrealzhou/lambda-local/config/docker"
 )
 
+const (
+	InvokerPropertyPort string = "port"
+)
+
 // Functions holds all functions' meta data
-var Functions = make(map[string]*FunctionMeta)
+var Functions = make(map[string]Handler)
 
 // ErrConn defines connection error to lambda
 var ErrConn = errors.New("Conn Error")
@@ -35,14 +33,39 @@ var ErrExec = errors.New("Exec Error")
 
 var envSettings = make(map[string]map[string]string)
 
-// FunctionMeta defines struct of function meta data
-type FunctionMeta struct {
-	Name       string
-	Arn        string
-	Port       int
-	TimeoutSec int64
-	Pid        int
-	Mutex      *sync.Mutex
+type Handler interface {
+	Runtime() string
+	Arn() string
+	Name() string
+	Init(name string, function *resources.AWSServerlessFunction)
+	Start(envs []string) error
+	Stop() error
+	Invoke(payload []byte) ([]byte, error)
+	Property(key string) interface{}
+}
+
+func registerFunc(name string, handler Handler) error {
+	if _, ok := Functions[name]; ok {
+		return fmt.Errorf("Function %s already exists.", name)
+	}
+	Functions[name] = handler
+	return nil
+}
+
+func deregisterFunc(name string) {
+	if _, ok := Functions[name]; !ok {
+		return
+	}
+	delete(Functions, name)
+}
+
+func getHandler(function *resources.AWSServerlessFunction) Handler {
+	switch function.Runtime {
+	case "go1.x":
+		return &Go1xHandler{}
+	default:
+		return nil
+	}
 }
 
 // PrepareFunction preload function and make it ready to invoke
@@ -50,13 +73,9 @@ func PrepareFunction(name string, function *resources.AWSServerlessFunction) err
 	if _, ok := Functions[name]; ok {
 		return nil
 	}
-	meta := &FunctionMeta{
-		Name:       name,
-		Arn:        name,
-		TimeoutSec: int64(function.Timeout),
-		Mutex:      &sync.Mutex{},
-	}
-	// locate exec file
+	h := getHandler(function)
+	h.Init(name, function)
+	// unzip lambda package
 	splits := strings.Split(*function.CodeUri.String, "/")
 	zipFile := filepath.Join(config.LambdaBase(), splits[len(splits)-1])
 	target := filepath.Join(config.LambdaBase(), name)
@@ -71,47 +90,11 @@ func PrepareFunction(name string, function *resources.AWSServerlessFunction) err
 	if err != nil {
 		return err
 	}
-	// find available port between 2000-3000
-	meta.Port = pickPort()
-	command := filepath.Join(config.LambdaBase(), name, function.Handler)
-	envs := generateEnvs(name, function, meta)
-	log.Debugf("Command: %s, envs: %v\n", command, envs)
-	cmd := exec.Command(command)
-	cmd.Dir = filepath.Join(config.LambdaBase(), name)
-	cmd.Env = envs
-	stdoutIn, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	go func() {
-		copyAndCapture(os.Stdout, stdoutIn)
-	}()
-	stderrIn, _ := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-	go func() {
-		copyAndCapture(os.Stderr, stderrIn)
-	}()
-	Functions[name] = meta
-	go func() {
-		defer delete(Functions, name)
-		if err := cmd.Start(); err != nil {
-			log.Errorf("Error on starting function %s: %s", name, err.Error())
-			return
-		}
-		meta.Pid = cmd.Process.Pid
-		log.Debugf("Function %s started, Pid is %d", name, meta.Pid)
-		if err := cmd.Wait(); err != nil {
-			log.Errorf("Function %s returned error: %v", name, err)
-		}
-		log.Debugf("Function %s finished", name)
-	}()
-	WaitFuncReady(meta)
-	return nil
+	envs := generateEnvs(name, function)
+	return h.Start(envs)
 }
 
-func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *FunctionMeta) []string {
+func generateEnvs(name string, function *resources.AWSServerlessFunction) []string {
 	envMap := make(map[string]string)
 	envs := make([]string, 0)
 	for key, val := range function.Environment.Variables {
@@ -159,7 +142,6 @@ func generateEnvs(name string, function *resources.AWSServerlessFunction, meta *
 	for k, v := range envMap {
 		envs = append(envs, k+"="+v)
 	}
-	envs = append(envs, "_LAMBDA_SERVER_PORT="+strconv.Itoa(meta.Port))
 	return envs
 }
 
@@ -188,77 +170,6 @@ func copyAndCapture(w io.Writer, r io.Reader) {
 			return
 		}
 	}
-}
-
-// WaitFuncReady waits for specified Lambda function service ready to invoke.
-func WaitFuncReady(meta *FunctionMeta) {
-	for {
-		err := pingFunc(meta)
-		if err != nil {
-			if err == ErrConn {
-				time.Sleep(50 * time.Millisecond)
-			} else {
-				log.Fatalf("Lambda %s is crashed: %s", meta.Name, err)
-				return
-			}
-		} else {
-			return
-		}
-	}
-}
-
-func pingFunc(meta *FunctionMeta) error {
-	client, err := rpc.Dial("tcp", "localhost:"+strconv.Itoa(meta.Port))
-	if err != nil {
-		return ErrConn
-	}
-	defer client.Close()
-	req := &messages.PingRequest{}
-	response := &messages.PingResponse{}
-	err = client.Call("Function.Ping", req, response)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// InvokeFunc do the invoke operation to specified Lambda function
-func InvokeFunc(meta *FunctionMeta, payload []byte) (json.RawMessage, error) {
-	meta.Mutex.Lock()
-	defer meta.Mutex.Unlock()
-	start := time.Now()
-	log.Debugf("Invoke Function %s with Payload: %s", meta.Name, string(payload))
-	log.Infof("Start Invoke Function %s at: %s\n", meta.Name, start.Format("2006/01/02 15:04:05"))
-	client, err := rpc.Dial("tcp", "localhost:"+strconv.Itoa(meta.Port))
-	if err != nil {
-		return nil, err
-	}
-	defer client.Close()
-	u1 := uuid.NewV4()
-	req := &messages.InvokeRequest{
-		Payload:   payload,
-		RequestId: u1.String(),
-		Deadline: messages.InvokeRequest_Timestamp{
-			Seconds: time.Now().Unix() + meta.TimeoutSec,
-		},
-		InvokedFunctionArn: meta.Arn,
-	}
-	response := &messages.InvokeResponse{}
-	invokeStart := time.Now()
-	err = client.Call("Function.Invoke", req, response)
-	invokeEnd := time.Now()
-	log.Infof("Invoke Function %s preparing took: %s; Invoke took: %s; Total time cost: %s\n", meta.Name, invokeStart.Sub(start), invokeEnd.Sub(invokeStart), invokeEnd.Sub(start))
-	if err != nil {
-		return nil, err
-	}
-	if response.Error != nil {
-		wrap := fromInvokErr(response.Error)
-		wrappedErr, _ := json.Marshal(wrap)
-		log.Debugf("Function %s with result: %s", meta.Name, string(wrappedErr))
-		return wrappedErr, ErrExec
-	}
-	log.Debugf("Function %s with result: %s", meta.Name, string(response.Payload))
-	return response.Payload, nil
 }
 
 // fromInvokErr wraps the raw error from lambda to standard lambda error struct.
@@ -338,23 +249,6 @@ func unzip(src string, target string) error {
 		}
 	}
 	return nil
-}
-
-func pickPort() int {
-	// find available port between 2000-3000
-	for port := 2000; port < 3000; port++ {
-		found := false
-		for _, m := range Functions {
-			if m.Port == port {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return port
-		}
-	}
-	return 0
 }
 
 // LoadEnvFile loads extra env json file
